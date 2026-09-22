@@ -214,6 +214,19 @@ module PuppetX
           end
         end
 
+        # Environment handed to the ACME client.
+        #
+        # certbot takes several of its settings this way and offers no flag
+        # for them. `HTTPS_PROXY` on a host that reaches the internet
+        # through one, and `REQUESTS_CA_BUNDLE` when the ACME endpoint is
+        # signed by something the system trust store has never heard of,
+        # which covers both a private ACME service and a test CA.
+        #
+        # @return [Hash{String => String}]
+        def client_environment
+          (config['environment'] || {}).transform_keys(&:to_s).transform_values(&:to_s)
+        end
+
         # Credential file for the DNS plugin, written by the manifest at
         # mode 0600. certbot refuses to use a credentials file that is
         # group or world readable, which is a nuisance the first time and
@@ -234,7 +247,7 @@ module PuppetX
           # attached to whatever invoked the agent, and a Bolt task's stdin
           # is the parameter pipe; handing either to certbot is a good way
           # to find out which tools block on it.
-          output, status = Open3.capture2e(*command, stdin_data: '')
+          output, status = Open3.capture2e(client_environment, *command, stdin_data: '')
           return output if status.success?
 
           raise Error, "certmanager: #{File.basename(command.first)} failed for #{name} " \

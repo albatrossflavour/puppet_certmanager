@@ -106,6 +106,20 @@ DNS validation, which is the only way to get a wildcard and the only way to issu
 
 `dns_propagation_seconds` is the setting that actually matters. certbot's defaults assume the provider's best case, and a slow zone transfer means the CA looks for the record before it exists. If your `dns-01` validations fail intermittently, this is why.
 
+A host that reaches the internet through a proxy, or an ACME endpoint signed by a CA the system has never heard of, needs environment settings rather than flags, because certbot offers no flags for either:
+
+```puppet
+'internal-acme' => {
+  'backend'       => 'acme',
+  'directory_url' => 'https://acme.internal.example.com/directory',
+  'email'         => 'certs@example.com',
+  'environment'   => {
+    'HTTPS_PROXY'        => 'http://proxy.example.com:3128',
+    'REQUESTS_CA_BUNDLE' => '/etc/pki/tls/certs/internal-ca.pem',
+  },
+}
+```
+
 Commercial ACME endpoints (ZeroSSL, Buypass, DigiCert's own ACME service) want External Account Binding:
 
 ```puppet

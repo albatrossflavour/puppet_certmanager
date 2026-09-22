@@ -28,7 +28,8 @@ describe PuppetX::Certmanager::Issuer::Acme, :store do
   def capture_certbot
     captured = nil
     allow(Open3).to receive(:capture2e) do |*args, **_kwargs|
-      captured = args
+      # args.first is the environment hash the backend always passes.
+      captured = args.drop(1)
       ['', status]
     end
     yield
@@ -55,6 +56,39 @@ describe PuppetX::Certmanager::Issuer::Acme, :store do
 
       expect(args).to include('certonly', '--cert-name', 'www.example.com')
       expect(args.join(' ')).to include('-d example.com').and include('-d www.example.com')
+    end
+
+    # certbot takes several settings from the environment and offers no
+    # flag for them, so an issuer behind a proxy or pointed at a privately
+    # signed ACME endpoint has nowhere else to put them.
+    context 'with environment settings' do
+      let(:config) { super().merge('environment' => { 'HTTPS_PROXY' => 'http://proxy:3128' }) }
+
+      it 'hands them to the client' do
+        stage_lineage
+        captured = nil
+        allow(Open3).to receive(:capture2e) do |*args, **_kwargs|
+          captured = args.first
+          ['', status]
+        end
+
+        issuer.issue
+
+        expect(captured).to eq('HTTPS_PROXY' => 'http://proxy:3128')
+      end
+    end
+
+    it 'passes an empty environment when the issuer sets none' do
+      stage_lineage
+      captured = nil
+      allow(Open3).to receive(:capture2e) do |*args, **_kwargs|
+        captured = args.first
+        ['', status]
+      end
+
+      issuer.issue
+
+      expect(captured).to eq({})
     end
 
     # Puppet's own stdin, or a Bolt task's parameter pipe, is not something

@@ -43,6 +43,13 @@
 # @param wacs_path
 #   Path to wacs.exe for this issuer specifically. Normally comes from
 #   `certmanager::wacs_path`.
+#
+# @param environment
+#   Extra environment variables for the ACME client. certbot takes several
+#   of its settings this way and there is no flag for them: `HTTPS_PROXY`
+#   for a host that reaches the internet through a proxy, and
+#   `REQUESTS_CA_BUNDLE` when the ACME endpoint is signed by a CA the
+#   system does not already trust.
 type Certmanager::Acmeconfig = Struct[{
     backend                           => Enum['acme'],
     directory_url                     => String[1],
@@ -59,4 +66,5 @@ type Certmanager::Acmeconfig = Struct[{
     Optional[config_dir]              => Stdlib::Absolutepath,
     Optional[certbot_path]            => String[1],
     Optional[wacs_path]               => String[1],
+    Optional[environment]             => Hash[String[1], String],
 }]

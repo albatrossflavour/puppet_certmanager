@@ -1161,6 +1161,7 @@ Struct[{
     Optional[config_dir]              => Stdlib::Absolutepath,
     Optional[certbot_path]            => String[1],
     Optional[wacs_path]               => String[1],
+    Optional[environment]             => Hash[String[1], String],
 }]
 ```
 
@@ -1183,6 +1184,7 @@ The following parameters are available in the `Certmanager::Acmeconfig` data typ
 * [`config_dir`](#-Certmanager--Acmeconfig--config_dir)
 * [`certbot_path`](#-Certmanager--Acmeconfig--certbot_path)
 * [`wacs_path`](#-Certmanager--Acmeconfig--wacs_path)
+* [`environment`](#-Certmanager--Acmeconfig--environment)
 
 ##### <a name="-Certmanager--Acmeconfig--backend"></a>`backend`
 
@@ -1253,6 +1255,14 @@ Path to certbot for this issuer specifically. Normally comes from
 
 Path to wacs.exe for this issuer specifically. Normally comes from
 `certmanager::wacs_path`.
+
+##### <a name="-Certmanager--Acmeconfig--environment"></a>`environment`
+
+Extra environment variables for the ACME client. certbot takes several
+of its settings this way and there is no flag for them: `HTTPS_PROXY`
+for a host that reaches the internet through a proxy, and
+`REQUESTS_CA_BUNDLE` when the ACME endpoint is signed by a CA the
+system does not already trust.
 
 ### <a name="Certmanager--Backend"></a>`Certmanager::Backend`
 

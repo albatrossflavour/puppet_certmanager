@@ -20,6 +20,7 @@ First cut. Not yet published to the Forge.
 - The `certmanager` fact, reporting expiry, names, key type and consumers, for certificates this module did not issue as well as the ones it did.
 - `certmanager::path()` and `certmanager::expiring()` functions.
 - `certmanager::report`, `certmanager::renew` and `certmanager::refresh_facts` tasks.
+- An `environment` setting on ACME issuers, for the certbot behaviour that has no flags: `HTTPS_PROXY` on a host that reaches the internet through a proxy, and `REQUESTS_CA_BUNDLE` when the ACME endpoint is signed by something the system trust store has never heard of.
 - Support for RHEL 8/9 and derivatives, Debian 12, Ubuntu 22.04/24.04, SLES 15 and Windows Server 2019/2022/2025.
 
 ### Known issues
