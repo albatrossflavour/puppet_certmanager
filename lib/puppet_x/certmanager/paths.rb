@@ -2,7 +2,12 @@
 
 require 'rbconfig'
 
+# Namespace for module-shipped Ruby libraries, as Puppet's own convention
+# has it.
 module PuppetX
+  # Everything certmanager ships that is not a type, provider, function or
+  # fact. Loaded by pluginsync on the agent, and directly by the Bolt tasks
+  # and the deploy hook, which run with no Puppet around them at all.
   module Certmanager
     # Where certmanager keeps its things.
     #

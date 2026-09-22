@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Namespace for constants shared by this module's Puppet functions. Puppet
+# functions are created inside a block, and a constant defined in that block
+# lands in the wrong namespace and is redefined on every reload, so anything
+# they share lives out here.
 module Certmanager
   # Filenames in the certificate store, keyed by the component name the
   # function accepts. Defined outside the function body because a constant

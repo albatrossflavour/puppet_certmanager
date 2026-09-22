@@ -8,6 +8,10 @@ module PuppetX
   module Certmanager
     # Resolves a backend name to its implementation.
     module Issuer
+      # Backend implementations, keyed by the name used in an issuer's
+      # `backend` setting. Adding a CA means adding a class here and a file
+      # beside this one; if it means touching anything else, the
+      # abstraction has leaked.
       BACKENDS = {
         'acme' => Acme,
         'digicert' => Digicert,

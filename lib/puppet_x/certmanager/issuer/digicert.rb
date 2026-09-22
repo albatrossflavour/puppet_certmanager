@@ -25,7 +25,13 @@ module PuppetX
       # 3. The private key never leaves the host. Puppet generates it and
       #    sends only a CSR.
       class Digicert < Base
+        # CertCentral's US endpoint. The EU endpoint and any proxy are set
+        # per issuer through `api_url`.
         DEFAULT_API = 'https://www.digicert.com/services/v2'
+
+        # Flexible OV product, chosen as the default because it is the one
+        # most CertCentral accounts actually hold. Override per issuer with
+        # `product_name_id`.
         DEFAULT_PRODUCT = 'ssl_securesite_flex'
 
         # Order states CertCentral reports while the order is still being
