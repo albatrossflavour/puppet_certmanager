@@ -1,0 +1,20 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "Report on every certificate this node knows about, managed or not",
+  "input_method": "stdin",
+  "parameters": {
+    "refresh": {
+      "description": "Rebuild the inventory before reporting instead of reading the cache",
+      "type": "Optional[Boolean]"
+    },
+    "expiring_within": {
+      "description": "Only report certificates expiring within this many days",
+      "type": "Optional[Integer[0]]"
+    },
+    "managed_only": {
+      "description": "Only report certificates this module issued",
+      "type": "Optional[Boolean]"
+    }
+  }
+}

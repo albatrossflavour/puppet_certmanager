@@ -1,1 +1,22 @@
---- {}
+---
+certmanager::root_dir: '/etc/certmanager'
+certmanager::owner: 'root'
+certmanager::group: 'root'
+
+# certbot from the distribution. Sites running it from snap or a virtualenv
+# should set manage_packages to false and point certbot_path at their own
+# installation rather than fighting the package provider over it.
+certmanager::certbot_package: 'certbot'
+certmanager::certbot_path: 'certbot'
+certmanager::dns_plugin_package_format: 'python3-certbot-dns-<plugin>'
+certmanager::wacs_path: ~
+certmanager::wacs_package: ~
+
+certmanager::ruby_path: '/opt/puppetlabs/puppet/bin/ruby'
+certmanager::refresh_hour: 3
+certmanager::refresh_minute: 17
+
+# Empty by default. Pointing the scan at /etc/ssl/certs finds several
+# hundred CA roots and buries the certificates that matter, so opting in is
+# a decision the site makes deliberately.
+certmanager::scan_directories: []

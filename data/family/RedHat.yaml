@@ -1,0 +1,7 @@
+---
+# certbot lives in EPEL on the RedHat family. This module does not enable
+# EPEL for you: pulling in a third-party repository as a side effect of
+# asking for a certificate is not a decision a certificate module gets to
+# make on a site's behalf.
+certmanager::certbot_package: 'certbot'
+certmanager::dns_plugin_package_format: 'python3-certbot-dns-<plugin>'

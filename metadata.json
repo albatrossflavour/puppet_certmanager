@@ -1,18 +1,44 @@
 {
-  "name": "tgreen-puppet_certmanager",
+  "name": "albatrossflavour-certmanager",
   "version": "0.1.0",
-  "author": "tgreen",
-  "summary": "",
+  "author": "albatrossflavour",
+  "summary": "Declarative X.509 certificate lifecycle management across ACME, DigiCert and self-signed issuers",
   "license": "Apache-2.0",
-  "source": "",
+  "source": "https://github.com/albatrossflavour/puppet_certmanager",
+  "project_page": "https://github.com/albatrossflavour/puppet_certmanager",
+  "issues_url": "https://github.com/albatrossflavour/puppet_certmanager/issues",
   "dependencies": [
-
+    {
+      "name": "puppetlabs/stdlib",
+      "version_requirement": ">= 9.0.0 < 11.0.0"
+    },
+    {
+      "name": "puppetlabs/cron_core",
+      "version_requirement": ">= 1.0.0 < 3.0.0"
+    },
+    {
+      "name": "puppetlabs/scheduled_task",
+      "version_requirement": ">= 3.0.0 < 6.0.0"
+    }
   ],
   "operatingsystem_support": [
     {
-      "operatingsystem": "CentOS",
+      "operatingsystem": "RedHat",
       "operatingsystemrelease": [
-        "7",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "operatingsystem": "Rocky",
+      "operatingsystemrelease": [
+        "8",
+        "9"
+      ]
+    },
+    {
+      "operatingsystem": "AlmaLinux",
+      "operatingsystemrelease": [
         "8",
         "9"
       ]
@@ -20,49 +46,27 @@
     {
       "operatingsystem": "OracleLinux",
       "operatingsystemrelease": [
-        "7"
-      ]
-    },
-    {
-      "operatingsystem": "RedHat",
-      "operatingsystemrelease": [
-        "7",
         "8",
         "9"
       ]
     },
     {
-      "operatingsystem": "Scientific",
-      "operatingsystemrelease": [
-        "7"
-      ]
-    },
-    {
-      "operatingsystem": "Rocky",
-      "operatingsystemrelease": [
-        "8"
-      ]
-    },
-    {
-      "operatingsystem": "AlmaLinux",
-      "operatingsystemrelease": [
-        "8"
-      ]
-    },
-    {
       "operatingsystem": "Debian",
       "operatingsystemrelease": [
-        "10",
-        "11",
         "12"
       ]
     },
     {
       "operatingsystem": "Ubuntu",
       "operatingsystemrelease": [
-        "18.04",
-        "20.04",
-        "22.04"
+        "22.04",
+        "24.04"
+      ]
+    },
+    {
+      "operatingsystem": "SLES",
+      "operatingsystemrelease": [
+        "15"
       ]
     },
     {
@@ -70,15 +74,14 @@
       "operatingsystemrelease": [
         "2019",
         "2022",
-        "10",
-        "11"
+        "2025"
       ]
     }
   ],
   "requirements": [
     {
       "name": "puppet",
-      "version_requirement": ">= 7.24 < 9.0.0"
+      "version_requirement": ">= 8.0.0 < 9.0.0"
     }
   ],
   "pdk-version": "3.8.0",

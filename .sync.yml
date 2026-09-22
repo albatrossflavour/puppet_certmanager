@@ -5,4 +5,58 @@
 #
 # See https://github.com/puppetlabs/pdk-templates/blob/main/config_defaults.yml
 # for the default values.
---- {}
+---
+.rubocop.yml:
+  default_configs:
+    # The strict profile's metrics are tuned for application code where a
+    # long method usually means a missing abstraction. This module is mostly
+    # X.509 handling and CLI argument assembly, where the long methods are
+    # long because the underlying API is, and splitting them produces a
+    # scatter of two-line helpers that are harder to follow than the thing
+    # they replaced. Raised rather than disabled, so genuine sprawl still
+    # gets flagged.
+    Metrics/MethodLength:
+      Max: 30
+    Metrics/AbcSize:
+      Max: 35
+    Metrics/CyclomaticComplexity:
+      Max: 12
+    Metrics/PerceivedComplexity:
+      Max: 12
+    Metrics/ClassLength:
+      Max: 250
+    Metrics/ModuleLength:
+      Max: 250
+    Metrics/BlockLength:
+      Max: 80
+    # Keyword arguments do not have the positional-order problem this cop
+    # exists to prevent, and the store's deploy methods are all keywords.
+    Metrics/ParameterLists:
+      CountKeywordArgs: false
+    # puppet_x is loaded by pluginsync in an order nothing controls, so a
+    # file cannot assume its parent module already exists. Nested definition
+    # creates it; compact definition raises NameError if it does not.
+    Style/ClassAndModuleChildren:
+      EnforcedStyle: compact
+      Exclude:
+        - 'lib/puppet_x/**/*.rb'
+    RSpec/ExampleLength:
+      Exclude:
+        - 'spec/unit/puppet/provider/**/*_spec.rb'
+        - 'spec/unit/puppet/transport/**/*_spec.rb'
+        - 'spec/unit/puppet_x/**/*_spec.rb'
+    RSpec/MultipleExpectations:
+      Exclude:
+        - 'spec/unit/puppet/provider/**/*_spec.rb'
+        - 'spec/unit/puppet/transport/**/*_spec.rb'
+        - 'spec/unit/puppet_x/**/*_spec.rb'
+        - 'spec/unit/facter/**/*_spec.rb'
+    RSpec/NamedSubject:
+      Exclude:
+        - 'spec/classes/**/*.rb'
+        - 'spec/defines/**/*.rb'
+        - 'spec/functions/**/*.rb'
+    RSpec/MultipleMemoizedHelpers:
+      Max: 10
+    RSpec/NestedGroups:
+      Max: 5

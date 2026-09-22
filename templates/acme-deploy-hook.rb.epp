@@ -1,0 +1,74 @@
+<%- | Array[Stdlib::Absolutepath] $libdirs, Stdlib::Absolutepath $root_dir, String[1] $ruby_path | -%>
+#!<%= $ruby_path %>
+# frozen_string_literal: true
+
+# certbot deploy hook: mirrors a renewed certificate into the certmanager
+# store and fires the consumers' own hooks.
+# Managed by Puppet (certmanager) -- local edits will be overwritten.
+#
+# certbot renews on its own timer, which is the correct place for it: it
+# knows about rate limits, retries and account state, and Puppet does not
+# run often enough to be the renewal mechanism. But that means renewals
+# happen with no catalog in sight, so without this hook a certificate
+# renews perfectly and every service on the host carries on serving the old
+# one until Puppet next runs.
+#
+# certbot sets RENEWED_LINEAGE to the live directory of whatever it just
+# renewed, and RENEWED_DOMAINS to the names on it.
+
+ENV['CERTMANAGER_ROOT'] = '<%= $root_dir %>'
+
+# More than one candidate because this script runs with no Puppet around it.
+# On an agent the libraries are wherever pluginsync put them; under `puppet
+# apply` they are still in the module. Neither location is knowable from
+# here, so the manifest passes both and the first one that actually has the
+# files wins.
+LIBDIRS = [
+<% $libdirs.each |$dir| { -%>
+  '<%= $dir %>',
+<% } -%>
+].freeze
+
+libdir = LIBDIRS.find { |dir| File.file?(File.join(dir, 'puppet_x', 'certmanager', 'store.rb')) }
+
+if libdir.nil?
+  warn("certmanager: could not find the module libraries in any of #{LIBDIRS.join(', ')}")
+  exit 1
+end
+
+$LOAD_PATH.unshift(libdir)
+
+require 'puppet_x/certmanager/store'
+require 'puppet_x/certmanager/inventory'
+
+lineage = ENV['RENEWED_LINEAGE']
+if lineage.nil? || lineage.empty?
+  warn('certmanager: RENEWED_LINEAGE is not set; this script is a certbot deploy hook')
+  exit 1
+end
+
+name = File.basename(lineage)
+store = PuppetX::Certmanager::Store.new(name)
+
+# A lineage certbot renewed that this module never deployed is not ours to
+# touch. Somebody may well be running certbot for their own purposes on the
+# same host.
+unless store.exist?
+  # stdout, not stderr: certbot labels anything on stderr as "error output"
+  # in its own logs, and a lineage this module does not manage is a normal
+  # thing to find on a host where somebody also runs certbot themselves.
+  puts "certmanager: #{name} is not in the store; leaving it alone"
+  exit 0
+end
+
+changed = store.refresh_from(
+  cert: File.join(lineage, 'cert.pem'),
+  key: File.join(lineage, 'privkey.pem'),
+  chain: File.join(lineage, 'chain.pem'),
+)
+
+# Keep the fact honest straight away rather than waiting for the scheduled
+# refresh: a renewal is exactly the moment the cached expiry date is wrong.
+PuppetX::Certmanager::Inventory.write_cache(PuppetX::Certmanager::Inventory.build)
+
+puts "certmanager: #{name} #{changed ? 'updated in' : 'already current in'} the store"
