@@ -1,5 +1,8 @@
 # certmanager
 
+[![CI](https://github.com/albatrossflavour/puppet_certmanager/actions/workflows/ci.yml/badge.svg)](https://github.com/albatrossflavour/puppet_certmanager/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Certificate lifecycle management for Puppet. Let's Encrypt, DigiCert and self-signed behind one resource shape, one place on disk, and a fact that tells you what is about to expire.
 
 ## What problem this solves
@@ -314,8 +317,13 @@ pdk bundle install
 pdk bundle exec rake spec_prep
 pdk validate
 pdk bundle exec rspec
+COVERAGE=yes pdk bundle exec rspec    # line coverage, gated at 70% in CI
 ```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the gates, the toolchain traps and the conventions that will look odd until somebody explains them. [CLAUDE.md](CLAUDE.md) covers the architecture and the things that will bite you.
+
+Security reports go through [GitHub's private vulnerability reporting](https://github.com/albatrossflavour/puppet_certmanager/security/advisories/new), not a public issue. [SECURITY.md](SECURITY.md) says what counts as a vulnerability in a module that handles private keys, and what does not.
 
 ## Licence
 
-Apache-2.0.
+Apache-2.0. See [LICENSE](LICENSE).

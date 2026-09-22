@@ -1,0 +1,130 @@
+---
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+# A newer push to the same branch or PR supersedes an in-flight run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PUPPET_GEM_VERSION: '~> 8.0'
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      # Metadata, Puppet syntax, puppet-lint, RuboCop and task metadata, which
+      # is everything `pdk validate` runs. Called through rake so the job does
+      # not depend on the PDK package being present on the runner.
+      - name: Syntax
+        run: bundle exec rake syntax
+
+      - name: Puppet lint
+        run: bundle exec rake lint
+
+      - name: Metadata
+        run: bundle exec rake metadata_lint
+
+      - name: Ruby style
+        run: bundle exec rubocop --format github
+
+  spec:
+    name: Spec (Puppet ${{ matrix.puppet }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - puppet: '8'
+            ruby: '3.2'
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+        env:
+          PUPPET_GEM_VERSION: "~> ${{ matrix.puppet }}.0"
+
+      # Without this every class and define spec dies on Stdlib::Absolutepath,
+      # which reads as a broken checkout rather than a missing step.
+      - name: Install fixtures
+        run: bundle exec rake spec_prep
+
+      - name: Unit specs
+        run: bundle exec rspec
+        env:
+          PUPPET_GEM_VERSION: "~> ${{ matrix.puppet }}.0"
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install fixtures
+        run: bundle exec rake spec_prep
+
+      # The floor is deliberately below the current figure. rspec-puppet loads
+      # module code through the fixtures symlink, so functions, types and
+      # providers are counted under a second path and read as untouched. The
+      # gate exists to catch a real collapse, not to police a percentage that
+      # the measurement cannot report accurately.
+      - name: Unit specs with coverage
+        run: bundle exec rspec
+        env:
+          COVERAGE: 'yes'
+          COVERAGE_MINIMUM: '70'
+
+  reference:
+    name: REFERENCE.md is current
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      # REFERENCE.md is generated. A stale one is worse than none, because it
+      # documents parameters that no longer exist.
+      - name: Check REFERENCE.md is current
+        run: bundle exec rake strings:validate:reference
+
+  docs:
+    name: Markdown
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: '**/*.md'

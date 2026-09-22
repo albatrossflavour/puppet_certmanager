@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Apache-2.0 `LICENSE` text, which `metadata.json` had been declaring without shipping.
+- `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`.
+- A CI pipeline: validation, unit specs, a line-coverage floor, a check that `REFERENCE.md` is current, and markdownlint.
+- Line coverage through SimpleCov, wired up in `spec/spec_helper_local.rb` and gated at 70%.
+
 ## [0.1.0] - 2026-09-22
 
 First cut. Not yet published to the Forge.

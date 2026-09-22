@@ -1,5 +1,42 @@
 # frozen_string_literal: true
 
+# Line coverage for the Ruby that does the actual work. Most of this module
+# is types, providers, issuer backends and a fact, so resource coverage on
+# its own says very little about whether any of it is tested.
+#
+# Started here rather than in spec_helper.rb because that file is
+# PDK-managed, and before anything under lib/ is required, or SimpleCov
+# records nothing.
+if ENV['COVERAGE'] == 'yes'
+  require 'simplecov'
+  require 'simplecov-console'
+
+  SimpleCov.formatters = [
+    SimpleCov::Formatter::HTMLFormatter,
+    SimpleCov::Formatter::Console,
+  ]
+
+  SimpleCov.start do
+    track_files 'lib/**/*.rb'
+    add_filter '/spec/'
+    add_filter '/vendor/'
+    add_group 'Types and providers', 'lib/puppet'
+    add_group 'Libraries', 'lib/puppet_x'
+    add_group 'Facts', 'lib/facter'
+
+    # The floor sits below the reported figure on purpose.
+    #
+    # spec/fixtures/modules/certmanager is a symlink to the module root, so
+    # rspec-puppet loads functions, types and providers through a second
+    # path and SimpleCov counts them separately. Code that is thoroughly
+    # exercised on every catalogue compile therefore reads as untouched, and
+    # the overall number understates reality by a margin nobody can put a
+    # figure on. The gate is here to catch a real collapse, not to police a
+    # percentage the measurement cannot report accurately.
+    minimum_coverage Integer(ENV.fetch('COVERAGE_MINIMUM', 70))
+  end
+end
+
 require 'fileutils'
 require 'openssl'
 require 'tmpdir'
