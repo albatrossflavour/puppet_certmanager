@@ -1,4 +1,4 @@
-<%- | Stdlib::Absolutepath $libdir, Stdlib::Absolutepath $root_dir, String[1] $ruby_path | -%>
+<%- | Array[Stdlib::Absolutepath] $libdirs, Stdlib::Absolutepath $root_dir, String[1] $ruby_path | -%>
 #!<%= $ruby_path %>
 # frozen_string_literal: true
 
@@ -10,11 +10,30 @@
 # to every Puppet run, and expiry data changes on a scale of days.
 
 ENV['CERTMANAGER_ROOT'] = '<%= $root_dir %>'
-$LOAD_PATH.unshift('<%= $libdir %>')
+
+# More than one candidate because this script runs with no Puppet around it.
+# On an agent the libraries are wherever pluginsync put them; under `puppet
+# apply` they are still in the module. Neither location is knowable from
+# here, so the manifest passes both and the first one that actually has the
+# files wins.
+LIBDIRS = [
+<% $libdirs.each |$dir| { -%>
+  '<%= $dir %>',
+<% } -%>
+].freeze
+
+libdir = LIBDIRS.find { |dir| File.file?(File.join(dir, 'puppet_x', 'certmanager', 'store.rb')) }
+
+if libdir.nil?
+  warn("certmanager: could not find the module libraries in any of #{LIBDIRS.join(', ')}")
+  exit 1
+end
+
+$LOAD_PATH.unshift(libdir)
 
 require 'puppet_x/certmanager/inventory'
 
 inventory = PuppetX::Certmanager::Inventory.build
 path = PuppetX::Certmanager::Inventory.write_cache(inventory)
 
-warn("certmanager: wrote #{inventory['count']} certificates to #{path}") if ARGV.include?('--verbose')
+puts "certmanager: wrote #{inventory['count']} certificates to #{path}" if ARGV.include?('--verbose')

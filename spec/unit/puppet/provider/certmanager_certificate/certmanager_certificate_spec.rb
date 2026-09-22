@@ -20,9 +20,12 @@ describe Puppet::Provider::CertmanagerCertificate::CertmanagerCertificate, :stor
       issuer: 'internal',
       issuer_config: { 'backend' => 'selfsigned', 'validity_days' => 90 },
       common_name: 'www.example.com',
-      san: ['example.com'],
+      # As certmanager::certificate builds it: every name on the finished
+      # certificate, common name included.
+      san: ['example.com', 'www.example.com'],
       key_type: 'ecdsa-p256',
       renew_before_days: 30,
+      certificate_state: 'current',
       subject: {},
     }
   end
@@ -135,6 +138,22 @@ describe Puppet::Provider::CertmanagerCertificate::CertmanagerCertificate, :stor
       provider.set(context, 'www.example.com' => { is: current, should: selfsigned })
 
       expect(PuppetX::Certmanager::Store.new('www.example.com').info['days_left']).to be >= 89
+    end
+
+    # The test that would have caught the SAN mismatch: issue, then read
+    # back, and confirm nothing the resource declares still looks different.
+    # A unit test that only checks "a certificate appeared" will happily pass
+    # while the real thing reissues on every run.
+    it 'leaves nothing to do on a second run' do
+      provider.set(context, 'www.example.com' => { is: { name: 'www.example.com', ensure: 'absent' }, should: selfsigned })
+
+      current = provider.get(context, ['www.example.com']).first
+      should = provider.canonicalize(context, [selfsigned.dup]).first
+
+      expect(current[:san]).to eq(should[:san])
+      expect(current[:key_type]).to eq(should[:key_type])
+      expect(current[:certificate_state]).to eq(should[:certificate_state])
+      expect(current[:ensure]).to eq(should[:ensure])
     end
 
     it 'rebuilds the fact cache so the next run does not report stale expiry data' do

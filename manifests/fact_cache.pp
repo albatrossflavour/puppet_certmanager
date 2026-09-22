@@ -15,10 +15,15 @@
 class certmanager::fact_cache {
   assert_private()
 
-  # Pluginsync drops the module's lib/ here on the agent, which is what the
-  # scripts need on their load path. Compiling this in rather than guessing
-  # at runtime means a non-standard vardir just works.
-  $libdir = "${facts['puppet_vardir']}/lib"
+  # These scripts run with no Puppet around them, so they have to be told
+  # where the module's libraries are. On an agent that is wherever
+  # pluginsync put them. Under `puppet apply` pluginsync has not run and the
+  # libraries are still in the module. Both are passed and the script picks
+  # whichever actually exists, which also covers a Bolt apply.
+  $libdirs = delete_undef_values([
+      "${facts['puppet_vardir']}/lib",
+      certmanager::module_libdir(),
+  ]).unique
 
   $script = "${certmanager::state_dir}/refresh_facts.rb"
 
@@ -28,7 +33,7 @@ class certmanager::fact_cache {
     group   => $certmanager::group,
     mode    => '0700',
     content => epp("${module_name}/refresh_facts.rb.epp", {
-        'libdir'    => $libdir,
+        'libdirs'   => $libdirs,
         'root_dir'  => $certmanager::root_dir,
         'ruby_path' => $certmanager::ruby_path,
     }),
@@ -48,16 +53,18 @@ class certmanager::fact_cache {
     # has ever run here.
     file { [$certbot_config_dir, "${certbot_config_dir}/renewal-hooks", $hook_dir]:
       ensure => directory,
-      owner  => 'root',
+      owner  => $certmanager::owner,
+      group  => $certmanager::group,
       mode   => '0755',
     }
 
     file { "${hook_dir}/certmanager":
       ensure  => file,
-      owner   => 'root',
+      owner   => $certmanager::owner,
+      group   => $certmanager::group,
       mode    => '0755',
       content => epp("${module_name}/acme-deploy-hook.rb.epp", {
-          'libdir'    => $libdir,
+          'libdirs'   => $libdirs,
           'root_dir'  => $certmanager::root_dir,
           'ruby_path' => $certmanager::ruby_path,
       }),

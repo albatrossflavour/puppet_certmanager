@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'puppet_x/certmanager/paths'
+require 'puppet_x/certmanager/inventory'
 
 describe 'certmanager fact', :store do
   subject(:fact) { Facter.fact(:certmanager).value }
@@ -33,6 +34,19 @@ describe 'certmanager fact', :store do
       'soonest_expiry' => 40,
       'generated_at' => Time.now.utc.iso8601,
     }
+  end
+
+  # The cache is rebuilt when a certificate is issued, which in a Puppet run
+  # happens before the consumers that use it are declared. Taking the
+  # consumer list from the cache means it is wrong until the next scheduled
+  # refresh.
+  it 'reads consumers live rather than trusting the cache' do
+    write_cache(cached)
+    hooks = File.join(PuppetX::Certmanager::Paths.hook_dir, 'www.example.com')
+    FileUtils.mkdir_p(hooks)
+    FileUtils.touch(File.join(hooks, 'nginx-www.sh'))
+
+    expect(fact['certificates']['www.example.com']['consumers']).to eq(['nginx-www.sh'])
   end
 
   it 'reports what the cache says' do

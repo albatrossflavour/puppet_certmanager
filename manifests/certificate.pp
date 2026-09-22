@@ -121,7 +121,27 @@ define certmanager::certificate (
     fail("certmanager::certificate[${certname}]: issuer '${resolved_issuer}' is not declared in certmanager::issuers (have: ${known})")
   }
 
+  # The ACME backend needs to know where its client lives, and that is a
+  # node-level fact rather than a property of the CA, so the class defaults
+  # are folded in here. Anything set on the issuer itself wins.
+  $client_defaults = $issuer_config['backend'] ? {
+    'acme'  => delete_undef_values({
+        'certbot_path' => $certmanager::certbot_path,
+        'wacs_path'    => $certmanager::wacs_path,
+    }),
+    default => {},
+  }
+
+  $resolved_config = $client_defaults + $issuer_config
+
   $cn = pick($common_name, $certname)
+
+  # Every name that will be on the finished certificate, not just the extra
+  # ones. A CA puts the common name in the SAN list too, so declaring only
+  # the extras here means the resource never matches the certificate it just
+  # issued, and every run reports drift and reissues. Against a CA with rate
+  # limits that is not a cosmetic bug.
+  $all_names = sort(unique([$cn] + $san))
 
   # dns-01 is the only challenge a public CA will issue a wildcard through.
   # Catching this at compile time beats catching it after certbot has spent
@@ -137,7 +157,7 @@ define certmanager::certificate (
     certmanager_placeholder { $certname:
       ensure        => present,
       common_name   => $cn,
-      san           => $san,
+      san           => $all_names,
       key_type      => $key_type,
       validity_days => $bootstrap_validity_days,
       subject       => $subject,
@@ -149,9 +169,9 @@ define certmanager::certificate (
   certmanager_certificate { $certname:
     ensure            => $ensure,
     issuer            => $resolved_issuer,
-    issuer_config     => $issuer_config,
+    issuer_config     => $resolved_config,
     common_name       => $cn,
-    san               => $san,
+    san               => $all_names,
     key_type          => $key_type,
     renew_before_days => $renew_before_days,
     challenge         => $challenge,

@@ -20,13 +20,99 @@ obvious from a single file.
 
 ---
 
+## certmanager specifics
+
+Read this before changing anything. The rest of the file is the generic
+CAT baseline; these are the decisions this module actually rests on.
+
+### Where the issuer abstraction lives
+
+In `lib/`, not in the manifests. Puppet's DSL has no clean dynamic dispatch,
+and issuance is expensive and time-based rather than state-based, which is
+what a custom type is for.
+
+```text
+lib/puppet/type/certmanager_certificate.rb    ResourceApi type, one for all issuers
+lib/puppet/provider/certmanager_certificate/  reads the store, delegates writes
+lib/puppet_x/certmanager/issuer/base.rb       drift detection, CSR and key generation
+lib/puppet_x/certmanager/issuer/acme.rb       certbot / win-acme
+lib/puppet_x/certmanager/issuer/digicert.rb   CertCentral REST
+lib/puppet_x/certmanager/issuer/selfsigned.rb openssl, and the bootstrap placeholder
+lib/puppet_x/certmanager/store.rb             canonical layout, atomic writes, hooks
+lib/puppet_x/certmanager/parser.rb            X509 to hash, shared by type and fact
+lib/puppet_x/certmanager/inventory.rb         builds the fact cache
+```
+
+Adding a CA means adding one file under `lib/puppet_x/certmanager/issuer/`
+and one entry in `Issuer::BACKENDS`. It should mean touching nothing else.
+If it does, the abstraction has leaked and that is the bug.
+
+### Things that will bite you
+
+**The store is self-describing on purpose.** A ResourceApi provider's `get`
+runs with no access to the catalog, so it cannot know what issuer or renewal
+window was declared. That is why `cert.json` records `backend` and
+`renew_before_days` at deploy time. Do not reintroduce a separate registry
+file; it will go stale against the store and the store will win.
+
+**`delete` only gets a name.** That is why this module does not use
+`SimpleProvider`: revoking needs the issuer's credentials, which live in the
+desired state. If you refactor the provider onto `SimpleProvider`, revocation
+silently stops working.
+
+**Drift is four checks, not one.** Existence, renewal window, SAN list, key
+type. `exists?` alone would never renew anything. The logic lives in
+`Base#drift` so the three backends cannot drift apart on it.
+
+**The placeholder must never overwrite a real certificate.** Replacing a
+valid public certificate with a self-signed one as a side effect of a Puppet
+run is considerably worse than the deadlock it exists to break. It records
+itself as `backend => 'placeholder'` so the fact and the provider can tell
+it apart from a certificate that is self-signed on purpose.
+
+**Ordering around consumers is deliberate.** The placeholder runs *before*
+the service so the service can start; the certificate only *notifies* it, so
+a failed issuance leaves nginx running on the placeholder instead of being
+skipped. Do not "tidy this up" into a single edge.
+
+**`pick_default` is a 3.x-API function.** An `undef` argument arrives as an
+empty string. Two manifests were quietly broken by this. Use a selector.
+
+**Hiera eats `%{...}`.** The DNS plugin package pattern uses `<plugin>`, not
+`%{plugin}`, because Hiera interpolates the latter away before the manifest
+ever sees it.
+
+**Certificates in specs are generated, not committed.** A committed
+certificate expires and the suite starts failing on a date nobody wrote
+down. `spec/spec_helper_local.rb` builds them, with an hour of slack past
+the requested window so `days_left` does not come back one short at random.
+
+**Sign spec certificates with the test CA unless you mean self-signed.** A
+self-signed certificate recorded against a real CA backend is correctly
+reported as a leftover placeholder, and a spec that gets this wrong tests
+the fixture rather than the code.
+
+### Tooling notes
+
+`pdk update` does not currently apply `.sync.yml`'s `default_configs` on
+pdk 3.8.0 with template 3.9.0. The RuboCop settings therefore live in both
+`.sync.yml` (so a working update reproduces them) and `.rubocop.yml` under a
+clearly marked local block. Extend the template's existing cop blocks rather
+than appending a second definition; YAML duplicate keys silently win and
+take the template's `EnforcedStyle` with them.
+
+`markdownlint-cli2` only merges configs from the working directory downward,
+so this repo carries its own `.markdownlint-cli2.yaml`.
+
+---
+
 ## Project layout
 
 A CAT-supported Puppet module uses some subset of this structure -- read what actually exists before
 assuming. Modules come in a few shapes: **manifest modules** (classes/defined types), **type/provider
 modules** (custom resources in `lib/puppet/`), and **task modules** (Bolt tasks, often no manifests).
 
-```
+```text
 manifests/                     # Puppet DSL: classes and defined types (.pp)
 lib/puppet/type/               # Custom resource type definitions (Ruby)
 lib/puppet/provider/<type>/    # Providers implementing each type per OS/tool

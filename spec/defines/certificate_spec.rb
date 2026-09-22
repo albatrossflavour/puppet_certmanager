@@ -59,6 +59,27 @@ describe 'certmanager::certificate' do
         end
       end
 
+      # The certificate a CA issues carries the common name in its SAN list
+      # as well. Declaring only the extra names means the resource never
+      # matches the certificate it just issued, so every run reports drift
+      # and reissues. Against a CA with rate limits that is not a cosmetic
+      # bug, and no catalogue-only test catches it.
+      context 'with additional names' do
+        let(:params) { { san: ['example.com', 'shop.example.com'] } }
+
+        it { is_expected.to compile.with_all_deps }
+
+        it 'declares every name that will be on the certificate, not just the extras' do
+          expect(subject).to contain_certmanager_certificate('www.example.com')
+            .with_san(['example.com', 'shop.example.com', 'www.example.com'])
+        end
+
+        it 'gives the placeholder the same names so SNI keeps working during bootstrap' do
+          expect(subject).to contain_certmanager_placeholder('www.example.com')
+            .with_san(['example.com', 'shop.example.com', 'www.example.com'])
+        end
+      end
+
       context 'with a self-signed issuer' do
         let(:params) { { issuer: 'internal' } }
 

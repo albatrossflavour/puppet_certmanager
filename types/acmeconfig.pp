@@ -30,6 +30,19 @@
 # @param preferred_chain
 #   Issuer common name of the preferred chain, when the CA offers more than
 #   one (the ISRG X1 / DST Root cross-sign problem).
+#
+# @param config_dir
+#   certbot's configuration directory, where it keeps account state and its
+#   own `live` and `renewal-hooks` trees. Only worth setting if you run
+#   certbot somewhere other than `/etc/letsencrypt`.
+#
+# @param certbot_path
+#   Path to certbot for this issuer specifically. Normally comes from
+#   `certmanager::certbot_path` and does not need setting here.
+#
+# @param wacs_path
+#   Path to wacs.exe for this issuer specifically. Normally comes from
+#   `certmanager::wacs_path`.
 type Certmanager::Acmeconfig = Struct[{
     backend                           => Enum['acme'],
     directory_url                     => String[1],
@@ -43,4 +56,7 @@ type Certmanager::Acmeconfig = Struct[{
     Optional[eab_hmac_key]            => Certmanager::Secret,
     Optional[server_port]             => Stdlib::Port,
     Optional[preferred_chain]         => String[1],
+    Optional[config_dir]              => Stdlib::Absolutepath,
+    Optional[certbot_path]            => String[1],
+    Optional[wacs_path]               => String[1],
 }]

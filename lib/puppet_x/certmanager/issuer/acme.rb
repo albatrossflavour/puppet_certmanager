@@ -230,7 +230,11 @@ module PuppetX
         # @param command [Array<String>]
         # @return [String] combined output
         def run(*command)
-          output, status = Open3.capture2e(*command)
+          # stdin_data closes the child's stdin. Puppet runs with stdin
+          # attached to whatever invoked the agent, and a Bolt task's stdin
+          # is the parameter pipe; handing either to certbot is a good way
+          # to find out which tools block on it.
+          output, status = Open3.capture2e(*command, stdin_data: '')
           return output if status.success?
 
           raise Error, "certmanager: #{File.basename(command.first)} failed for #{name} " \

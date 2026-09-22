@@ -57,10 +57,19 @@ begin
     # certbot owns the lineage and the account. Let it do the work, then
     # mirror the result: reissuing around it would orphan its renewal
     # config and the next timer run would undo this one.
-    args = ['certbot', 'renew', '--non-interactive', '--cert-name', name]
+    # --no-random-sleep-on-renew matters more than it looks. certbot sleeps
+    # for a random interval of up to eight minutes on a non-interactive
+    # renewal, to spread load across the CA. That is exactly right for its
+    # own timer and exactly wrong for a task somebody is running by hand
+    # because something is about to expire.
+    args = ['certbot', 'renew', '--non-interactive', '--no-random-sleep-on-renew',
+            '--cert-name', name]
     args << '--force-renewal' if params['force']
 
-    output, status = Open3.capture2e(*args)
+    # stdin_data closes the child's stdin explicitly. A Bolt task's stdin is
+    # the parameter pipe, already read to EOF, and handing that to a
+    # subprocess is a good way to find out which tools block on it.
+    output, status = Open3.capture2e(*args, stdin_data: '')
     fail_with('renewal-failed', "certbot exited #{status.exitstatus}", 'output' => output.strip) unless status.success?
 
     lineage = File.join(params['config_dir'] || '/etc/letsencrypt', 'live', name)

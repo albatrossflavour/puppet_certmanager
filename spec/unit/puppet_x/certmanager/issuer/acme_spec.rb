@@ -27,7 +27,7 @@ describe PuppetX::Certmanager::Issuer::Acme, :store do
   # is the only useful thing a unit test can say about a CLI wrapper.
   def capture_certbot
     captured = nil
-    allow(Open3).to receive(:capture2e) do |*args|
+    allow(Open3).to receive(:capture2e) do |*args, **_kwargs|
       captured = args
       ['', status]
     end
@@ -55,6 +55,21 @@ describe PuppetX::Certmanager::Issuer::Acme, :store do
 
       expect(args).to include('certonly', '--cert-name', 'www.example.com')
       expect(args.join(' ')).to include('-d example.com').and include('-d www.example.com')
+    end
+
+    # Puppet's own stdin, or a Bolt task's parameter pipe, is not something
+    # certbot should be able to block on.
+    it 'closes the client stdin rather than handing it whatever Puppet had' do
+      stage_lineage
+      captured = nil
+      allow(Open3).to receive(:capture2e) do |*_args, **kwargs|
+        captured = kwargs
+        ['', status]
+      end
+
+      issuer.issue
+
+      expect(captured).to include(stdin_data: '')
     end
 
     it 'passes the directory URL so a staging issuer really hits staging' do

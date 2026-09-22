@@ -41,7 +41,20 @@ Facter.add(:certmanager, type: :aggregate) do
   end
 
   chunk(:certificates) do
-    { 'certificates' => cached ? cached.fetch('certificates', {}) : {} }
+    certificates = cached ? cached.fetch('certificates', {}) : {}
+
+    # Consumers are read live rather than taken from the cache. The cache is
+    # rebuilt at the moment a certificate is issued, which in a Puppet run
+    # is before the consumers that use it have been declared, so a cached
+    # consumer list is wrong until the next scheduled refresh. Reading the
+    # hook directory is one readdir per certificate and is always current.
+    if defined?(PuppetX::Certmanager::Inventory)
+      certificates.each do |name, certificate|
+        certificate['consumers'] = PuppetX::Certmanager::Inventory.consumers(name) if certificate['managed']
+      end
+    end
+
+    { 'certificates' => certificates }
   end
 
   chunk(:summary) do

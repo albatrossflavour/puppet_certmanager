@@ -1,18 +1,5 @@
 # frozen_string_literal: true
 
-# Returns the canonical path to one file of a managed certificate.
-#
-# This is how consuming configuration finds a certificate without hardcoding
-# a path that is correct only for one issuer. An nginx template calls this
-# and keeps working when the certificate moves from Let's Encrypt to
-# DigiCert, because the store layout does not change.
-#
-# The location honours `certmanager::store_dir` from Hiera, so overriding
-# the store in data moves the function's answer with it.
-#
-# @example In an EPP template
-#   ssl_certificate     <%= certmanager::path($cert, 'fullchain') %>;
-#   ssl_certificate_key <%= certmanager::path($cert, 'privkey') %>;
 module Certmanager
   # Filenames in the certificate store, keyed by the component name the
   # function accepts. Defined outside the function body because a constant
@@ -28,6 +15,20 @@ module Certmanager
     'metadata' => 'cert.json',
   }.freeze
 end
+
+# Returns the canonical path to one file of a managed certificate.
+#
+# This is how consuming configuration finds a certificate without hardcoding
+# a path that is correct only for one issuer. An nginx template calls this
+# and keeps working when the certificate moves from Let's Encrypt to
+# DigiCert, because the store layout does not change.
+#
+# The location honours `certmanager::store_dir` from Hiera, so overriding
+# the store in data moves the function's answer with it.
+#
+# @example In an EPP template
+#   ssl_certificate     <%= certmanager::path($cert, 'fullchain') %>;
+#   ssl_certificate_key <%= certmanager::path($cert, 'privkey') %>;
 
 Puppet::Functions.create_function(:'certmanager::path', Puppet::Functions::InternalFunction) do
   # @param name The certificate name, matching the `certmanager::certificate` title.
