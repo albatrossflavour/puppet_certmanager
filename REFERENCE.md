@@ -28,9 +28,9 @@
 
 ### Functions
 
-* [`certmanager::expiring`](#certmanager--expiring)
+* [`certmanager::expiring`](#certmanager--expiring): Certificates on this node expiring within the given number of days.  Reads the `certmanager` fact, so it reports on everything the inventory 
 * [`certmanager::module_libdir`](#certmanager--module_libdir): The path to this module's own `lib` directory in the current environment.  Needed because the deploy hook and the fact-cache refresh job are 
-* [`certmanager::path`](#certmanager--path)
+* [`certmanager::path`](#certmanager--path): Returns the canonical path to one file of a managed certificate.  This is how consuming configuration finds a certificate without hardcoding 
 
 ### Data types
 
@@ -1000,13 +1000,45 @@ Default value: `30`
 
 Type: Ruby 4.x API
 
-The certmanager::expiring function.
+Certificates on this node expiring within the given number of days.
+
+Reads the `certmanager` fact, so it reports on everything the inventory
+knows about, not only what this catalog declares. That distinction is the
+point: the certificate about to expire is usually the one nobody put in
+Puppet.
+
+#### Examples
+
+##### Fail a run when something is about to break
+
+```puppet
+$doomed = certmanager::expiring(7)
+unless empty($doomed) {
+  notify { "certificates expiring within 7 days: ${join($doomed, ', ')}": }
+}
+```
 
 #### `certmanager::expiring(Optional[Integer[0]] $days)`
 
-The certmanager::expiring function.
+Certificates on this node expiring within the given number of days.
+
+Reads the `certmanager` fact, so it reports on everything the inventory
+knows about, not only what this catalog declares. That distinction is the
+point: the certificate about to expire is usually the one nobody put in
+Puppet.
 
 Returns: `Array[String]` Certificate names, soonest first.
+
+##### Examples
+
+###### Fail a run when something is about to break
+
+```puppet
+$doomed = certmanager::expiring(7)
+unless empty($doomed) {
+  notify { "certificates expiring within 7 days: ${join($doomed, ', ')}": }
+}
+```
 
 ##### `days`
 
@@ -1050,13 +1082,47 @@ anyway.
 
 Type: Ruby 4.x API
 
-The certmanager::path function.
+Returns the canonical path to one file of a managed certificate.
+
+This is how consuming configuration finds a certificate without hardcoding
+a path that is correct only for one issuer. An nginx template calls this
+and keeps working when the certificate moves from Let's Encrypt to
+DigiCert, because the store layout does not change.
+
+The location honours `certmanager::store_dir` from Hiera, so overriding
+the store in data moves the function's answer with it.
+
+#### Examples
+
+##### In an EPP template
+
+```puppet
+ssl_certificate     <%= certmanager::path($cert, 'fullchain') %>;
+ssl_certificate_key <%= certmanager::path($cert, 'privkey') %>;
+```
 
 #### `certmanager::path(Certmanager::Certname $name, Optional[Enum['cert', 'chain', 'fullchain', 'privkey', 'combined', 'pkcs12', 'metadata', 'dir']] $component)`
 
-The certmanager::path function.
+Returns the canonical path to one file of a managed certificate.
+
+This is how consuming configuration finds a certificate without hardcoding
+a path that is correct only for one issuer. An nginx template calls this
+and keeps working when the certificate moves from Let's Encrypt to
+DigiCert, because the store layout does not change.
+
+The location honours `certmanager::store_dir` from Hiera, so overriding
+the store in data moves the function's answer with it.
 
 Returns: `Stdlib::Absolutepath` Absolute path to that file.
+
+##### Examples
+
+###### In an EPP template
+
+```puppet
+ssl_certificate     <%= certmanager::path($cert, 'fullchain') %>;
+ssl_certificate_key <%= certmanager::path($cert, 'privkey') %>;
+```
 
 ##### `name`
 

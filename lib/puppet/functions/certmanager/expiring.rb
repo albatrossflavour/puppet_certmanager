@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'puppet_x/certmanager/inventory'
+
 # Certificates on this node expiring within the given number of days.
 #
 # Reads the `certmanager` fact, so it reports on everything the inventory
@@ -12,8 +14,6 @@
 #   unless empty($doomed) {
 #     notify { "certificates expiring within 7 days: ${join($doomed, ', ')}": }
 #   }
-require 'puppet_x/certmanager/inventory'
-
 Puppet::Functions.create_function(:'certmanager::expiring', Puppet::Functions::InternalFunction) do
   # Already-expired certificates are included: `days_left` goes negative
   # once a certificate expires, so it is inside any window you ask about,

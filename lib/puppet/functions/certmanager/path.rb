@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
-# Namespace for constants shared by this module's Puppet functions. Puppet
-# functions are created inside a block, and a constant defined in that block
-# lands in the wrong namespace and is redefined on every reload, so anything
-# they share lives out here.
+require 'puppet_x/certmanager/paths'
+
 # Returns the canonical path to one file of a managed certificate.
 #
 # This is how consuming configuration finds a certificate without hardcoding
@@ -17,8 +15,6 @@
 # @example In an EPP template
 #   ssl_certificate     <%= certmanager::path($cert, 'fullchain') %>;
 #   ssl_certificate_key <%= certmanager::path($cert, 'privkey') %>;
-
-require 'puppet_x/certmanager/paths'
 
 Puppet::Functions.create_function(:'certmanager::path', Puppet::Functions::InternalFunction) do
   # @param name The certificate name, matching the `certmanager::certificate` title.
