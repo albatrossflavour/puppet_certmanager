@@ -1,0 +1,20 @@
+<%- | Stdlib::Absolutepath $libdir, Stdlib::Absolutepath $root_dir, String[1] $ruby_path | -%>
+#!<%= $ruby_path %>
+# frozen_string_literal: true
+
+# Rebuilds the cache behind the `certmanager` fact.
+# Managed by Puppet (certmanager) -- local edits will be overwritten.
+#
+# Run on a schedule rather than from the fact itself. A host with a few
+# hundred certificates in its scan directories would otherwise add seconds
+# to every Puppet run, and expiry data changes on a scale of days.
+
+ENV['CERTMANAGER_ROOT'] = '<%= $root_dir %>'
+$LOAD_PATH.unshift('<%= $libdir %>')
+
+require 'puppet_x/certmanager/inventory'
+
+inventory = PuppetX::Certmanager::Inventory.build
+path = PuppetX::Certmanager::Inventory.write_cache(inventory)
+
+warn("certmanager: wrote #{inventory['count']} certificates to #{path}") if ARGV.include?('--verbose')

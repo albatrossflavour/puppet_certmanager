@@ -5,4 +5,37 @@
 #
 # See https://github.com/puppetlabs/pdk-templates/blob/main/config_defaults.yml
 # for the default values.
---- {}
+---
+.rubocop.yml:
+  default_configs:
+    # The strict profile's metrics are tuned for application code where a
+    # long method usually means a missing abstraction. This module is mostly
+    # X.509 handling and CLI argument assembly, where the long methods are
+    # long because the underlying API is, and splitting them produces a
+    # scatter of two-line helpers that are harder to follow than the thing
+    # they replaced. Raised rather than disabled, so genuine sprawl still
+    # gets flagged.
+    Metrics/MethodLength:
+      Max: 30
+    Metrics/AbcSize:
+      Max: 35
+    Metrics/CyclomaticComplexity:
+      Max: 12
+    Metrics/PerceivedComplexity:
+      Max: 12
+    Metrics/ClassLength:
+      Max: 250
+    Metrics/ModuleLength:
+      Max: 250
+    Metrics/BlockLength:
+      Max: 80
+    # Keyword arguments, which the cop counts the same as positional ones.
+    Metrics/ParameterLists:
+      Max: 5
+      MaxOptionalParameters: 8
+    # puppet_x is loaded by pluginsync in an order nothing controls, so a
+    # file cannot assume its parent module already exists. Nested definition
+    # creates it; compact definition raises NameError if it does not.
+    Style/ClassAndModuleChildren:
+      Exclude:
+        - 'lib/puppet_x/**/*.rb'

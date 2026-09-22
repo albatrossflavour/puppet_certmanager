@@ -1,0 +1,22 @@
+<%- |
+  String[1]           $certificate,
+  String[1]           $consumer,
+  Array[String[1]]    $commands,
+  Optional[String[1]] $only_if,
+| -%>
+# Deploy hook for <%= $certificate %>, consumer <%= $consumer %>.
+# Managed by Puppet (certmanager) -- local edits will be overwritten.
+#
+# See $env:CERTMANAGER_* for the certificate's paths in the store.
+
+$ErrorActionPreference = 'Stop'
+<% if $only_if { -%>
+
+if (-not (<%= $only_if %>)) {
+  exit 0
+}
+<% } -%>
+<% $commands.each |$command| { -%>
+
+<%= $command %>
+<% } -%>

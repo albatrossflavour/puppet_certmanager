@@ -1,0 +1,38 @@
+<%- |
+  String[1]           $certificate,
+  String[1]           $consumer,
+  Array[String[1]]    $commands,
+  Optional[String[1]] $only_if,
+| -%>
+#!/bin/sh
+# Deploy hook for <%= $certificate %>, consumer <%= $consumer %>.
+# Managed by Puppet (certmanager) -- local edits will be overwritten.
+#
+# Run by certmanager after the certificate changes, including renewals that
+# happen on the ACME client's own timer between Puppet runs. The store
+# exports the certificate's paths, so this script never hardcodes them.
+#
+#   CERTMANAGER_NAME       the certificate name
+#   CERTMANAGER_REASON     issued | renewed | deployed
+#   CERTMANAGER_DIR        the certificate's directory in the store
+#   CERTMANAGER_CERT       leaf certificate
+#   CERTMANAGER_CHAIN      intermediates
+#   CERTMANAGER_FULLCHAIN  leaf plus intermediates
+#   CERTMANAGER_PRIVKEY    private key
+#   CERTMANAGER_COMBINED   key plus full chain
+#   CERTMANAGER_PKCS12     PKCS#12 bundle, if one was generated
+
+set -eu
+<% if $only_if { -%>
+
+# Nothing to reload if the service is not running. Reloading a stopped
+# service is at best noise in the log and at worst a failed hook that masks
+# a real one.
+if ! <%= $only_if %>; then
+  exit 0
+fi
+<% } -%>
+<% $commands.each |$command| { -%>
+
+<%= $command %>
+<% } -%>

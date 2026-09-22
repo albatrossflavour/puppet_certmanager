@@ -1,0 +1,14 @@
+---
+certmanager::root_dir: 'C:/ProgramData/PuppetLabs/certmanager'
+certmanager::owner: 'Administrators'
+certmanager::group: ~
+
+# certbot does not run usefully on Windows. win-acme is the equivalent and
+# the ACME backend drives it with the same parameters.
+certmanager::certbot_package: ~
+certmanager::certbot_path: ~
+certmanager::wacs_package: 'win-acme'
+certmanager::wacs_path: 'C:/ProgramData/chocolatey/lib/win-acme/tools/wacs.exe'
+certmanager::dns_plugin_package_format: ~
+
+certmanager::ruby_path: 'C:/Program Files/Puppet Labs/Puppet/puppet/bin/ruby.exe'

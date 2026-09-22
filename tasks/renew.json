@@ -1,0 +1,33 @@
+{
+  "puppet_task_version": 1,
+  "supports_noop": false,
+  "description": "Renew a managed certificate now, without waiting for the renewal window",
+  "input_method": "stdin",
+  "parameters": {
+    "certificate": {
+      "description": "Certificate name, as it appears in the store",
+      "type": "String[1]"
+    },
+    "force": {
+      "description": "Renew even if the certificate is nowhere near expiry. Counts against the CA's rate limits.",
+      "type": "Optional[Boolean]"
+    },
+    "api_key": {
+      "description": "DigiCert CertCentral API key. Only needed for certificates issued by the digicert backend.",
+      "type": "Optional[String[1]]",
+      "sensitive": true
+    },
+    "config_dir": {
+      "description": "certbot configuration directory, if the issuer does not use the default",
+      "type": "Optional[String[1]]"
+    },
+    "organization_id": {
+      "description": "DigiCert organisation ID. Only needed for the digicert backend.",
+      "type": "Optional[Integer[1]]"
+    },
+    "api_url": {
+      "description": "DigiCert CertCentral API base, for the EU endpoint or a proxy",
+      "type": "Optional[String[1]]"
+    }
+  }
+}

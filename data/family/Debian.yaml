@@ -1,0 +1,3 @@
+---
+certmanager::certbot_package: 'certbot'
+certmanager::dns_plugin_package_format: 'python3-certbot-dns-%{plugin}'
