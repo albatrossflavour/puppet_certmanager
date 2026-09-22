@@ -198,6 +198,37 @@ describe Puppet::Provider::CertmanagerCertificate::CertmanagerCertificate, :stor
                    })
     end
 
+    # A certificate that will not revoke is still a certificate somebody
+    # asked to remove. Failing the whole resource over the CA being
+    # unreachable would leave the manifest permanently red.
+    it 'warns but carries on when the CA will not accept a revocation' do
+      deploy(backend: 'selfsigned', issuer: 'internal', self_signed: true)
+      allow(PuppetX::Certmanager::Issuer).to receive(:for)
+        .and_raise(PuppetX::Certmanager::Issuer::Base::Error, 'CertCentral is down')
+
+      expect(context).to receive(:warning).with(%r{Could not revoke .* CertCentral is down})
+
+      provider.set(context, 'www.example.com' => {
+                     is: { name: 'www.example.com', ensure: 'present' },
+                     should: selfsigned.merge(ensure: 'absent', purge_on_absent: true),
+                   })
+
+      expect(PuppetX::Certmanager::Store.new('www.example.com').exist?).to be(false)
+    end
+
+    # The certificate is issued either way. A cache that would not rebuild is
+    # a reporting problem, and failing the resource over it would make a
+    # successful issuance look like a failure.
+    it 'warns but does not fail when the fact cache cannot be rebuilt' do
+      allow(PuppetX::Certmanager::Inventory).to receive(:write_cache).and_raise(Errno::EACCES)
+
+      expect(context).to receive(:warning).with(%r{fact cache could not be rebuilt})
+
+      provider.set(context, 'www.example.com' => { is: { name: 'www.example.com', ensure: 'absent' }, should: selfsigned })
+
+      expect(PuppetX::Certmanager::Store.new('www.example.com').exist?).to be(true)
+    end
+
     it 'turns a backend failure into a Puppet error rather than a stack trace' do
       allow(context).to receive(:err)
       broken = selfsigned.merge(issuer_config: { 'backend' => 'nonesuch' })

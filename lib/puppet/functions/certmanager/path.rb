@@ -4,22 +4,6 @@
 # functions are created inside a block, and a constant defined in that block
 # lands in the wrong namespace and is redefined on every reload, so anything
 # they share lives out here.
-module Certmanager
-  # Filenames in the certificate store, keyed by the component name the
-  # function accepts. Defined outside the function body because a constant
-  # inside `create_function`'s block would land in the wrong namespace and
-  # be redefined on every reload.
-  STORE_FILENAMES = {
-    'cert' => 'cert.pem',
-    'chain' => 'chain.pem',
-    'fullchain' => 'fullchain.pem',
-    'privkey' => 'privkey.pem',
-    'combined' => 'combined.pem',
-    'pkcs12' => 'bundle.p12',
-    'metadata' => 'cert.json',
-  }.freeze
-end
-
 # Returns the canonical path to one file of a managed certificate.
 #
 # This is how consuming configuration finds a certificate without hardcoding
@@ -34,6 +18,8 @@ end
 #   ssl_certificate     <%= certmanager::path($cert, 'fullchain') %>;
 #   ssl_certificate_key <%= certmanager::path($cert, 'privkey') %>;
 
+require 'puppet_x/certmanager/paths'
+
 Puppet::Functions.create_function(:'certmanager::path', Puppet::Functions::InternalFunction) do
   # @param name The certificate name, matching the `certmanager::certificate` title.
   # @param component Which file in the store to return.
@@ -46,10 +32,12 @@ Puppet::Functions.create_function(:'certmanager::path', Puppet::Functions::Inter
   end
 
   def path(scope, name, component = 'fullchain')
-    dir = "#{store_dir(scope)}/#{name}"
-    return dir if component == 'dir'
-
-    "#{dir}/#{Certmanager::STORE_FILENAMES.fetch(component)}"
+    # The layout is defined once, in PuppetX::Certmanager::Paths, and the
+    # store writes to exactly these paths. Keeping a second copy of the
+    # filenames here is how a rename ends up silently pointing a web server
+    # at a file nothing writes.
+    PuppetX::Certmanager::Paths.certificate(name, store: store_dir(scope))
+                               .fetch(component.to_sym)
   end
 
   private

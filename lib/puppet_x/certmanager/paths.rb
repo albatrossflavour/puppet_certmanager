@@ -76,9 +76,13 @@ module PuppetX
       # The files making up one certificate in the store.
       #
       # @param name [String] certificate name
+      # @param store [String] the store root, for callers that resolve it
+      #   themselves. `certmanager::path()` does, because the store location
+      #   is a class parameter a site can override in Hiera and this module
+      #   is loaded with no catalogue in sight.
       # @return [Hash{Symbol => String}]
-      def certificate(name)
-        dir = File.join(store_dir, name)
+      def certificate(name, store: store_dir)
+        dir = File.join(store, name)
         {
           dir: dir,
           cert: File.join(dir, 'cert.pem'),

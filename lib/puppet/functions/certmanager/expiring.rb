@@ -12,6 +12,8 @@
 #   unless empty($doomed) {
 #     notify { "certificates expiring within 7 days: ${join($doomed, ', ')}": }
 #   }
+require 'puppet_x/certmanager/inventory'
+
 Puppet::Functions.create_function(:'certmanager::expiring', Puppet::Functions::InternalFunction) do
   # Already-expired certificates are included: `days_left` goes negative
   # once a certificate expires, so it is inside any window you ask about,
@@ -29,8 +31,6 @@ Puppet::Functions.create_function(:'certmanager::expiring', Puppet::Functions::I
   def expiring(scope, days = 30)
     certificates = (scope['facts'] || {}).dig('certmanager', 'certificates') || {}
 
-    certificates.select { |_, cert| cert['days_left'].to_i <= days }
-                .sort_by { |_, cert| cert['days_left'].to_i }
-                .map(&:first)
+    PuppetX::Certmanager::Inventory.expiring(certificates, days)
   end
 end

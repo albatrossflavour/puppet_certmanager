@@ -86,6 +86,66 @@ describe PuppetX::Certmanager::Issuer::Base, :store do
     end
   end
 
+  describe '#external_renewal?' do
+    # Only ACME has a client with its own timer. Everything else renews when
+    # Puppet says so, and reporting otherwise would make the provider skip
+    # work it has to do.
+    it 'is false for a backend with no renewal timer of its own' do
+      expect(issuer.external_renewal?).to be(false)
+    end
+  end
+
+  describe '#issue' do
+    it 'refuses to be called on the abstract base rather than silently doing nothing' do
+      abstract = described_class.new('www.example.com', resource, config)
+
+      expect { abstract.issue }.to raise_error(NotImplementedError, %r{does not implement})
+    end
+  end
+
+  describe 'the certificate subject' do
+    let(:resource) { super().merge(subject: { 'O' => 'Example Ltd', 'C' => 'AU' }) }
+
+    it 'carries the extra components through alongside the common name' do
+      issuer.issue
+
+      expect(issuer.store.info['subject']).to include('O=Example Ltd', 'C=AU', 'CN=www.example.com')
+    end
+  end
+
+  describe 'the signature digest' do
+    {
+      'sha384' => 'sha384',
+      'sha512' => 'sha512',
+      nil => 'sha256',
+    }.each do |configured, expected|
+      it "signs with #{expected} when the issuer asks for #{configured.inspect}" do
+        settings = configured ? config.merge('signature_hash' => configured) : config
+        PuppetX::Certmanager::Issuer::Selfsigned.new('www.example.com', resource, settings).issue
+
+        expect(PuppetX::Certmanager::Store.new('www.example.com').info['signature_algorithm'])
+          .to match(%r{#{expected}}i)
+      end
+    end
+  end
+
+  describe 'key generation' do
+    {
+      'rsa-2048' => 'rsa-2048',
+      'ecdsa-p384' => 'ecdsa-p384',
+      'ecdsa-p521' => 'ecdsa-p521',
+      'nonsense' => 'ecdsa-p256',
+    }.each do |declared, expected|
+      it "produces #{expected} for a declared key type of #{declared}" do
+        PuppetX::Certmanager::Issuer::Selfsigned.new(
+          'www.example.com', resource.merge(key_type: declared), config
+        ).issue
+
+        expect(PuppetX::Certmanager::Store.new('www.example.com').info['key_type']).to eq(expected)
+      end
+    end
+  end
+
   describe '#desired_names' do
     it 'includes the common name without needing it repeated in the SAN list' do
       expect(issuer.desired_names).to eq(['example.com', 'www.example.com'])

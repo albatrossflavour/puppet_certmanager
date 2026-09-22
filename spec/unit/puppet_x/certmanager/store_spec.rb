@@ -119,6 +119,35 @@ describe PuppetX::Certmanager::Store, :store do
     end
   end
 
+  describe '#metadata' do
+    it 'comes back empty rather than raising when nothing has been deployed' do
+      expect(store.metadata).to eq({})
+    end
+
+    it 'comes back empty rather than raising when the record is corrupt' do
+      store.deploy(cert: cert, key: key)
+      File.write(store.paths[:metadata], '{"name": "www')
+
+      expect(store.metadata).to eq({})
+    end
+  end
+
+  describe 'the PKCS#12 bundle' do
+    it 'carries the intermediates, so a Java keystore gets a usable chain' do
+      ca_cert, = CertmanagerSpec.ca
+      store.deploy(cert: cert, key: key, chain: ca_cert.to_pem, pkcs12_password: 'changeit')
+
+      p12 = OpenSSL::PKCS12.new(File.binread(store.paths[:pkcs12]), 'changeit')
+      expect(p12.ca_certs.map { |c| c.subject.to_s }).to include(%r{Test Intermediate CA})
+    end
+
+    it 'says which certificate failed rather than surfacing a bare OpenSSL error' do
+      expect {
+        store.deploy(cert: cert, key: 'not a key at all', pkcs12_password: 'changeit')
+      }.to raise_error(%r{certmanager: could not build PKCS#12 bundle for www\.example\.com})
+    end
+  end
+
   describe '#remove' do
     it 'takes the whole certificate directory with it' do
       store.deploy(cert: cert, key: key)

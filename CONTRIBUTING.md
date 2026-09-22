@@ -27,6 +27,14 @@ On CI, where `bundler-cache` installs gems in-tree, it also walks `vendor/bundle
 
 `bundle exec rake spec` carries the right pattern and runs `spec_prep` itself.
 
+## Coverage
+
+Line coverage is gated at 95% and is measured over `spec/unit` only.
+
+That is not a convenience. A catalogue compile loads providers through the fixtures symlink, so the calls land on a copy SimpleCov is not tracking. Run against the whole suite the certificate provider reports 29%; run against `spec/unit` it reports 97%, with the same tests and the same code. If you measure coverage across everything you will get a number that is wrong in a direction that makes you write tests you do not need.
+
+`lib/puppet/functions` and `lib/puppet/type` are excluded, because Puppet's autoloader only ever loads them out of the modulepath and nothing executes the copy SimpleCov tracks. They are covered by `spec/functions`, just not line by line.
+
 ## The gates
 
 CI runs all of these on every pull request, so you can run the relevant one before pushing rather than after.
@@ -35,7 +43,7 @@ CI runs all of these on every pull request, so you can run the relevant one befo
 | --- | --- | --- |
 | Everything | `pdk validate` | Any change. Covers metadata, Puppet syntax, puppet-lint and RuboCop |
 | Unit specs | `pdk bundle exec rake spec` | Any change. Not a bare `rspec`, see above |
-| Line coverage | `COVERAGE=yes pdk bundle exec rspec` | Any change under `lib/` |
+| Line coverage | `COVERAGE=yes pdk bundle exec rspec spec/unit` | Any change under `lib/`. Gated at 95% |
 | REFERENCE.md | `pdk bundle exec puppet strings generate --format markdown --out REFERENCE.md` | Any parameter or docstring change |
 | Markdown | `markdownlint-cli2 "**/*.md"` | Any prose change |
 

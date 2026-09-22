@@ -87,16 +87,19 @@ jobs:
           ruby-version: '3.2'
           bundler-cache: true
 
-      # The floor is deliberately below the current figure. rspec-puppet loads
-      # module code through the fixtures symlink, so functions, types and
-      # providers are counted under a second path and read as untouched. The
-      # gate exists to catch a real collapse, not to police a percentage that
-      # the measurement cannot report accurately.
+      - name: Install fixtures
+        run: bundle exec rake spec_prep
+
+      # spec/unit only, and deliberately. A catalogue compile loads the
+      # providers through the fixtures symlink, so the calls land on a copy
+      # SimpleCov is not tracking: run with the whole suite the certificate
+      # provider reports 29%, run over spec/unit it reports 97%, same tests
+      # and same code. The catalogue specs are gated by the Spec job.
       - name: Unit specs with coverage
-        run: bundle exec rake spec
+        run: bundle exec rspec spec/unit
         env:
           COVERAGE: 'yes'
-          COVERAGE_MINIMUM: '70'
+          COVERAGE_MINIMUM: '95'
 
   reference:
     name: REFERENCE.md is current

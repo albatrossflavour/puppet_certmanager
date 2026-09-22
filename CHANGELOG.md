@@ -6,12 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- DigiCert revocation raised `ArgumentError` instead of calling the CA. Ruby read the trailing hash as keyword arguments, because `request` takes a `raw:` keyword. Found by writing the first test that had ever called `#revoke`.
+- `certmanager::path()` kept its own copy of the store's filenames, so a rename in `PuppetX::Certmanager::Paths` would have silently pointed a web server at a file nothing writes. The function now asks `Paths` rather than duplicating it.
+
 ### Added
 
 - Apache-2.0 `LICENSE` text, which `metadata.json` had been declaring without shipping.
 - `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`.
 - A CI pipeline: validation, unit specs, a line-coverage floor, a check that `REFERENCE.md` is current, and markdownlint.
-- Line coverage through SimpleCov, wired up in `spec/spec_helper_local.rb` and gated at 70%.
+- Line coverage through SimpleCov, wired up in `spec/spec_helper_local.rb`, measured over `spec/unit` and gated at 95%.
 
 ## [0.1.0] - 2026-09-22
 
@@ -27,6 +32,7 @@ First cut. Not yet published to the Forge.
 - The `certmanager` fact, reporting expiry, names, key type and consumers, for certificates this module did not issue as well as the ones it did.
 - `certmanager::path()` and `certmanager::expiring()` functions.
 - `certmanager::report`, `certmanager::renew` and `certmanager::refresh_facts` tasks.
+- Specs for everything the coverage push exposed as never having been run at all: the win-acme path on Windows, ACME revocation, external account bindings, DigiCert revocation, and the PKCS#12 chain.
 - An `environment` setting on ACME issuers, for the certbot behaviour that has no flags: `HTTPS_PROXY` on a host that reaches the internet through a proxy, and `REQUESTS_CA_BUNDLE` when the ACME endpoint is signed by something the system trust store has never heard of.
 - Support for RHEL 8/9 and derivatives, Debian 12, Ubuntu 22.04/24.04, SLES 15 and Windows Server 2019/2022/2025.
 

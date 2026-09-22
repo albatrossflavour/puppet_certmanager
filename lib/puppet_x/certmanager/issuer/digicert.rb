@@ -59,8 +59,11 @@ module PuppetX
           cert_id = certificate_id(order['order_id'])
           return if cert_id.nil?
 
+          # Braces are load-bearing. Without them Ruby reads the trailing
+          # hash as keyword arguments, `request` has a `raw:` keyword, and
+          # revocation dies on ArgumentError instead of calling the CA.
           request(:put, "/certificate/#{cert_id}/revoke",
-                  'comments' => resource[:revocation_reason] || 'Revoked by certmanager')
+                  { 'comments' => resource[:revocation_reason] || 'Revoked by certmanager' })
           FileUtils.rm_f(order_file)
         end
 

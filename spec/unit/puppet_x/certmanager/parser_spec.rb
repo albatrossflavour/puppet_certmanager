@@ -82,6 +82,31 @@ describe PuppetX::Certmanager::Parser do
       cert, = CertmanagerSpec.certificate(key_type: 'ecdsa-p384')
       expect(parser.key_type(cert)).to eq('ecdsa-p384')
     end
+
+    it 'names a DSA key rather than reporting it as unknown' do
+      skip 'OpenSSL 3 refuses to generate DSA keys in the default provider' unless dsa_available?
+
+      cert = OpenSSL::X509::Certificate.new
+      cert.public_key = OpenSSL::PKey::DSA.new(2048).public_key
+
+      expect(parser.key_type(cert)).to match(%r{\Adsa-\d+\z})
+    end
+
+    # The scan runs over whatever is on disk. Something it cannot identify
+    # must come back as unknown rather than taking the fact down.
+    it 'says unknown rather than raising when the key cannot be read' do
+      cert = instance_double(OpenSSL::X509::Certificate)
+      allow(cert).to receive(:public_key).and_raise(OpenSSL::PKey::PKeyError)
+
+      expect(parser.key_type(cert)).to eq('unknown')
+    end
+
+    def dsa_available?
+      OpenSSL::PKey::DSA.new(2048)
+      true
+    rescue StandardError
+      false
+    end
   end
 
   describe '.self_signed?' do
@@ -92,6 +117,14 @@ describe PuppetX::Certmanager::Parser do
       impostor, = CertmanagerSpec.certificate(common_name: 'Same Name', issuer: ca_cert, issuer_key: ca_key)
 
       expect(parser.self_signed?(impostor)).to be(false)
+    end
+
+    it 'says no rather than raising when the signature cannot be checked' do
+      cert = instance_double(OpenSSL::X509::Certificate)
+      allow(cert).to receive_messages(subject: 'a', issuer: 'a', public_key: nil)
+      allow(cert).to receive(:verify).and_raise(OpenSSL::PKey::PKeyError)
+
+      expect(parser.self_signed?(cert)).to be(false)
     end
   end
 

@@ -117,11 +117,64 @@ describe PuppetX::Certmanager::Issuer::Digicert, :store do
         .to raise_error(PuppetX::Certmanager::Issuer::Base::Error, %r{organization not validated})
     end
 
+    it 'surfaces a non-JSON error body rather than swallowing it' do
+      stub_http(response(400, '<html>502 Bad Gateway</html>'))
+
+      expect { issuer.issue }
+        .to raise_error(PuppetX::Certmanager::Issuer::Base::Error, %r{502 Bad Gateway})
+    end
+
     it 'says so plainly when CertCentral cannot be reached' do
       allow(Net::HTTP).to receive(:start).and_raise(SocketError, 'getaddrinfo failed')
 
       expect { issuer.issue }
         .to raise_error(PuppetX::Certmanager::Issuer::Base::Error, %r{could not reach DigiCert})
+    end
+  end
+
+  describe '#revoke' do
+    # Revocation is not the same as forgetting. The order record is what
+    # tells us which certificate to revoke, so it goes only once the CA has
+    # accepted it.
+    it 'revokes the issued certificate and then forgets the order' do
+      bundle = pair[0].to_pem + ca_pair[0].to_pem
+      stub_http(
+        response(200, JSON.generate('id' => 9001)),
+        response(200, JSON.generate('status' => 'issued', 'certificate' => { 'id' => 77 })),
+        response(200, bundle),
+      )
+      issuer.issue
+
+      order_file = File.join(PuppetX::Certmanager::Paths.state_dir, 'digicert', 'payments.example.com.json')
+      expect(File).to exist(order_file)
+
+      stub_http(
+        response(200, JSON.generate('status' => 'issued', 'certificate' => { 'id' => 77 })),
+        response(200, '{}'),
+      )
+      issuer.revoke
+
+      expect(File).not_to exist(order_file)
+    end
+
+    it 'does nothing when there is no order to revoke' do
+      expect(Net::HTTP).not_to receive(:start)
+      issuer.revoke
+    end
+
+    it 'does nothing when the order never produced a certificate' do
+      stub_http(
+        response(200, JSON.generate('id' => 9001)),
+        response(200, JSON.generate('status' => 'pending')),
+      )
+      begin
+        issuer.issue
+      rescue PuppetX::Certmanager::Issuer::Base::Error
+        nil
+      end
+
+      stub_http(response(200, JSON.generate('status' => 'pending')))
+      expect { issuer.revoke }.not_to raise_error
     end
   end
 end

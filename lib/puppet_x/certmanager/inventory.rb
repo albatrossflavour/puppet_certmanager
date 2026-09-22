@@ -173,6 +173,22 @@ module PuppetX
         certificates.select { |_, cert| cert['days_left'] <= days }.keys.sort
       end
 
+      # Certificates expiring within a window, soonest first.
+      #
+      # Already-expired certificates are included: `days_left` goes negative
+      # once a certificate expires, so it is inside any window you ask
+      # about, and one that expired last week is not less urgent than one
+      # expiring next week.
+      #
+      # @param certificates [Hash] the `certificates` half of the fact
+      # @param days [Integer] how far ahead to look
+      # @return [Array<String>] certificate names, soonest first
+      def expiring(certificates, days)
+        certificates.select { |_, cert| cert['days_left'].to_i <= days }
+                    .sort_by { |_, cert| cert['days_left'].to_i }
+                    .map(&:first)
+      end
+
       # Write the inventory to the cache the fact reads.
       #
       # @param inventory [Hash]

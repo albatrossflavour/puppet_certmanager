@@ -317,7 +317,7 @@ pdk bundle install
 pdk bundle exec rake spec_prep
 pdk validate
 pdk bundle exec rspec
-COVERAGE=yes pdk bundle exec rspec    # line coverage, gated at 70% in CI
+COVERAGE=yes pdk bundle exec rspec spec/unit   # line coverage, gated at 95% in CI
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the gates, the toolchain traps and the conventions that will look odd until somebody explains them. [CLAUDE.md](CLAUDE.md) covers the architecture and the things that will bite you.
