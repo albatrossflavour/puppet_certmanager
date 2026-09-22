@@ -25,6 +25,7 @@ First cut. Not yet published to the Forge.
 
 ### Known issues
 
+- An ACME issuer's `environment` covers certbot as this module runs it. certbot's own renewal timer is a systemd unit this module does not manage and does not see those settings, so a private ACME endpoint's CA needs to be in the system trust store as well.
 - No acceptance tests. Verified by hand against a real certbot and a real ACME CA, not by Litmus.
 - Never run through a PE agent with pluginsync, only masterless `puppet apply`.
 - The DigiCert backend has been exercised against stubbed HTTP only. Placing a real order costs money.

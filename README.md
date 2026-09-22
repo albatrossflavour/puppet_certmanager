@@ -120,6 +120,8 @@ A host that reaches the internet through a proxy, or an ACME endpoint signed by 
 }
 ```
 
+One limitation worth knowing before you rely on it. This applies when certmanager runs certbot, which is issuance and anything Puppet drives. certbot's own renewal timer is a systemd unit this module does not manage, and it runs with none of it. For a public CA that makes no difference. For a private ACME endpoint it means renewals work under Puppet and fail on the timer, so put that CA in the system trust store as well and treat this setting as covering issuance only.
+
 Commercial ACME endpoints (ZeroSSL, Buypass, DigiCert's own ACME service) want External Account Binding:
 
 ```puppet
