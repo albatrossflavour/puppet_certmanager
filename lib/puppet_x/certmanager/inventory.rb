@@ -144,31 +144,33 @@ module PuppetX
       # @param now [Time]
       # @return [Hash]
       def summarise(certificates, config, now: Time.now)
-        warn_days = config['warn_days'] || 30
-        critical_days = config['critical_days'] || 7
+        live = certificates.reject { |_, cert| cert['expired'] }
 
-        expired = certificates.select { |_, c| c['expired'] }.keys.sort
-        critical = certificates.reject { |_, c| c['expired'] }
-                               .select { |_, c| c['days_left'] <= critical_days }.keys.sort
-        warning = certificates.reject { |_, c| c['expired'] }
-                              .select { |_, c| c['days_left'] <= warn_days }.keys.sort - critical
-        # A self-signed certificate is only a problem when a real CA was
-        # supposed to sign it. The bootstrap records itself as `placeholder`
-        # at deploy time, so this needs no guessing from the issuer name
-        # (which the user is free to call whatever they like).
-        placeholders = certificates.select { |_, c| c['backend'] == 'placeholder' }.keys.sort
+        critical = within(live, config['critical_days'] || 7)
+        warning = within(live, config['warn_days'] || 30) - critical
 
         {
           'certificates' => certificates,
           'count' => certificates.size,
-          'managed_count' => certificates.count { |_, c| c['managed'] },
-          'expired' => expired,
+          'managed_count' => certificates.count { |_, cert| cert['managed'] },
+          'expired' => certificates.select { |_, cert| cert['expired'] }.keys.sort,
           'expiring_critical' => critical,
           'expiring_soon' => warning,
-          'placeholders' => placeholders,
-          'soonest_expiry' => certificates.values.reject { |c| c['expired'] }.map { |c| c['days_left'] }.min,
+          # A self-signed certificate is only a problem when a real CA was
+          # supposed to sign it. The bootstrap records itself as
+          # `placeholder` at deploy time, so this needs no guessing from the
+          # issuer name, which the user is free to call whatever they like.
+          'placeholders' => certificates.select { |_, cert| cert['backend'] == 'placeholder' }.keys.sort,
+          'soonest_expiry' => live.values.map { |cert| cert['days_left'] }.min,
           'generated_at' => now.utc.iso8601,
         }
+      end
+
+      # @param certificates [Hash]
+      # @param days [Integer]
+      # @return [Array<String>]
+      def within(certificates, days)
+        certificates.select { |_, cert| cert['days_left'] <= days }.keys.sort
       end
 
       # Write the inventory to the cache the fact reads.

@@ -74,6 +74,22 @@ module PuppetX
           File.chmod(0o600, key_file)
 
           product = config['product_name_id'] || DEFAULT_PRODUCT
+          response = request(:post, "/order/certificate/#{product}", order_body(csr))
+
+          order = {
+            'order_id' => response['id'],
+            'placed_at' => Time.now.utc.iso8601,
+            'names' => desired_names,
+            'product' => product,
+          }
+          File.write(order_file, JSON.pretty_generate(order))
+          File.chmod(0o600, order_file)
+          order
+        end
+
+        # @param csr [OpenSSL::X509::Request]
+        # @return [Hash]
+        def order_body(csr)
           body = {
             'certificate' => {
               'common_name' => resource[:common_name] || name,
@@ -85,18 +101,7 @@ module PuppetX
             'validity_years' => config['validity_years'] || 1,
           }
           body['container'] = { 'id' => config['container_id'] } if config['container_id']
-
-          response = request(:post, "/order/certificate/#{product}", body)
-
-          order = {
-            'order_id' => response['id'],
-            'placed_at' => Time.now.utc.iso8601,
-            'names' => desired_names,
-            'product' => product,
-          }
-          File.write(order_file, JSON.pretty_generate(order))
-          File.chmod(0o600, order_file)
-          order
+          body
         end
 
         # @param order [Hash]

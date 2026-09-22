@@ -71,12 +71,18 @@
 # @param wacs_package
 #   Package providing win-acme.
 #
+# @param wacs_package_provider
+#   Package provider for win-acme. Left unset by default so Puppet picks:
+#   naming chocolatey here would make every Windows node depend on the
+#   chocolatey module whether or not the site uses it.
+#
 # @param wacs_path
 #   Path to wacs.exe.
 #
 # @param dns_plugin_package_format
-#   Package name pattern for certbot DNS plugins, with `%{plugin}` standing
-#   in for the plugin name.
+#   Package name pattern for certbot DNS plugins, with `<plugin>` standing
+#   in for the plugin name. Deliberately not Hiera's own `%{}` syntax,
+#   which Hiera would interpolate away before the manifest ever saw it.
 #
 # @param manage_fact_refresh
 #   Whether to schedule the job that rebuilds the fact cache. The cache is
@@ -153,6 +159,7 @@ class certmanager (
   Optional[String[1]] $certbot_package           = undef,
   Optional[String[1]] $certbot_path              = undef,
   Optional[String[1]] $wacs_package              = undef,
+  Optional[String[1]] $wacs_package_provider     = undef,
   Optional[String[1]] $wacs_path                 = undef,
   Optional[String[1]] $dns_plugin_package_format = undef,
 

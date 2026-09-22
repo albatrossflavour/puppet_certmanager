@@ -3,4 +3,4 @@
 # have it at all, in which case manage_packages should be false and certbot
 # installed from pip into a virtualenv.
 certmanager::certbot_package: 'python3-certbot'
-certmanager::dns_plugin_package_format: 'python3-certbot-dns-%{plugin}'
+certmanager::dns_plugin_package_format: 'python3-certbot-dns-<plugin>'

@@ -84,7 +84,14 @@ define certmanager::consumer (
     },
   }
 
-  $reload = pick_default($reload_command, $default_reload, undef)
+  # Not pick_default: it is a 3.x-API function, so an undef argument
+  # arrives as an empty string and the "nothing to do" check below silently
+  # passes with a single empty command.
+  $reload = $reload_command ? {
+    undef   => $default_reload,
+    default => $reload_command,
+  }
+
   $all_commands = $reload ? {
     undef   => $commands,
     default => $commands + [$reload],

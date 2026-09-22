@@ -103,7 +103,12 @@ define certmanager::certificate (
   include certmanager
 
   $certname = $title
-  $resolved_issuer = pick_default($issuer, $certmanager::default_issuer, undef)
+  # Not pick_default: it is a 3.x-API function and turns an undef argument
+  # into an empty string, which would go looking for an issuer named ''.
+  $resolved_issuer = $issuer ? {
+    undef   => $certmanager::default_issuer,
+    default => $issuer,
+  }
 
   if !$resolved_issuer {
     fail("certmanager::certificate[${certname}]: no issuer given and certmanager::default_issuer is unset")

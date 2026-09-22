@@ -47,6 +47,11 @@ Style/BlockDelimiters:
 Style/ClassAndModuleChildren:
   Description: Compact style reduces the required amount of indentation.
   EnforcedStyle: compact
+  Exclude:
+  # certmanager local: puppet_x is loaded by pluginsync in an order nothing
+  # controls, so a file cannot assume its parent module already exists.
+  # Nested definition creates it; compact definition raises NameError.
+  - lib/puppet_x/**/*.rb
 Style/EmptyElse:
   Description: Enforce against empty else clauses, but allow `nil` for clarity.
   EnforcedStyle: empty
@@ -106,11 +111,20 @@ RSpec/ExampleLength:
   Exclude:
   - spec/unit/puppet/provider/**/*_spec.rb
   - spec/unit/puppet/transport/**/*_spec.rb
+  # certmanager local: these specs drive a real certificate through a real
+  # store on disk, so an example is a short scenario rather than one call.
+  - spec/unit/puppet_x/**/*_spec.rb
 RSpec/MultipleExpectations:
   Description: The resource-API provider specs PDK generates use multiple expectations
     per example to cover resource attribute checks. Scoped to PDK-generated provider
     and transport spec paths only (D-08).
   Exclude:
+  # certmanager local: the assertion worth making about a deployed
+  # certificate, or about the fact built from one, is usually "these things
+  # are all true of what came out", and splitting it regenerates the whole
+  # scenario for no extra cover.
+  - spec/unit/puppet_x/**/*_spec.rb
+  - spec/unit/facter/**/*_spec.rb
   - spec/unit/puppet/provider/**/*_spec.rb
   - spec/unit/puppet/transport/**/*_spec.rb
 RSpec/VerifiedDoubleReference:
@@ -140,3 +154,50 @@ Lint/EmptyClass:
     the network_device path only (D-08).
   Exclude:
   - lib/puppet/util/network_device/**/*.rb
+
+# --- certmanager local configuration -----------------------------------
+# These settings also live in .sync.yml so they survive a `pdk update` that
+# regenerates this file. They are repeated here because pdk 3.8.0 with
+# template 3.9.0 does not currently apply .sync.yml's default_configs.
+#
+# The strict profile's metrics are tuned for application code, where a long
+# method usually means a missing abstraction. Most of this module is X.509
+# handling and CLI argument assembly, where the long methods are long
+# because the underlying API is, and breaking them up produces a scatter of
+# two-line helpers that reads worse than the thing it replaced. Raised
+# rather than disabled, so genuine sprawl still gets flagged.
+Metrics/MethodLength:
+  Max: 30
+Metrics/AbcSize:
+  Max: 35
+Metrics/CyclomaticComplexity:
+  Max: 12
+Metrics/PerceivedComplexity:
+  Max: 12
+Metrics/ClassLength:
+  Max: 250
+Metrics/ModuleLength:
+  Max: 250
+Metrics/BlockLength:
+  Max: 80
+# Keyword arguments do not have the positional-order problem this cop
+# exists to prevent, and the store's deploy methods are all keywords.
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+
+# certmanager local: `is_expected.to compile` is the rspec-puppet idiom and
+# there is no subject worth naming in a catalogue test.
+RSpec/NamedSubject:
+  Exclude:
+  - spec/classes/**/*.rb
+  - spec/defines/**/*.rb
+  - spec/functions/**/*.rb
+# certmanager local: certificate scenarios need a CA, a leaf, a key and a
+# store to be meaningful, which is more memoized helpers than the default
+# allows and fewer than it would take to be confusing.
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
+# certmanager local: the OS matrix loop is itself one level of nesting, so
+# everything inside it starts one deeper than the cop expects.
+RSpec/NestedGroups:
+  Max: 5

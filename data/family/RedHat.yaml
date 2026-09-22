@@ -4,4 +4,4 @@
 # asking for a certificate is not a decision a certificate module gets to
 # make on a site's behalf.
 certmanager::certbot_package: 'certbot'
-certmanager::dns_plugin_package_format: 'python3-certbot-dns-%{plugin}'
+certmanager::dns_plugin_package_format: 'python3-certbot-dns-<plugin>'

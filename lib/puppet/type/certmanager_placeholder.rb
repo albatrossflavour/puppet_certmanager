@@ -33,8 +33,16 @@ Puppet::ResourceApi.register_type(
   features: ['simple_get_filter'],
   attributes: {
     ensure: {
-      type: 'Enum[present]',
-      desc: 'Placeholders are only ever created. Removal is the real certificate replacing them.',
+      type: 'Enum[present, absent]',
+      desc: <<~DESC,
+        Normally left alone. A placeholder is created when the store is
+        empty and then replaced by the real certificate.
+
+        `absent` removes a placeholder that is still a placeholder. It will
+        not remove a real certificate that has since replaced one, because
+        deleting a working certificate as a side effect of tidying up a
+        bootstrap would be a spectacular own goal.
+      DESC
       default: 'present',
     },
     name: {

@@ -8,7 +8,7 @@ certmanager::group: 'root'
 # installation rather than fighting the package provider over it.
 certmanager::certbot_package: 'certbot'
 certmanager::certbot_path: 'certbot'
-certmanager::dns_plugin_package_format: 'python3-certbot-dns-%{plugin}'
+certmanager::dns_plugin_package_format: 'python3-certbot-dns-<plugin>'
 certmanager::wacs_path: ~
 certmanager::wacs_package: ~
 

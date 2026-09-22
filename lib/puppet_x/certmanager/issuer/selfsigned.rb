@@ -62,6 +62,20 @@ module PuppetX
           cert.not_before = now - 300
           cert.not_after = now + (validity_days * 86_400)
 
+          extensions(cert).each { |ext| cert.add_extension(ext) }
+          cert.sign(key, digest)
+          cert
+        end
+
+        # The extensions a TLS server certificate needs to be usable.
+        #
+        # `basicConstraints CA:FALSE` matters more than it looks: without
+        # it some stacks will happily treat the placeholder as a CA, and
+        # OpenSSL 3 rejects a leaf certificate that claims to be one.
+        #
+        # @param cert [OpenSSL::X509::Certificate]
+        # @return [Array<OpenSSL::X509::Extension>]
+        def extensions(cert)
           factory = OpenSSL::X509::ExtensionFactory.new
           factory.subject_certificate = cert
           factory.issuer_certificate = cert
@@ -72,10 +86,7 @@ module PuppetX
             factory.create_extension('extendedKeyUsage', 'serverAuth,clientAuth', false),
             factory.create_extension('subjectKeyIdentifier', 'hash', false),
             factory.create_extension('subjectAltName', desired_names.map { |n| "DNS:#{n}" }.join(','), false),
-          ].each { |ext| cert.add_extension(ext) }
-
-          cert.sign(key, digest)
-          cert
+          ]
         end
 
         # @return [Integer]

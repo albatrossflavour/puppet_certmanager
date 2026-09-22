@@ -24,7 +24,7 @@ class certmanager::install {
     if $certmanager::wacs_package {
       package { $certmanager::wacs_package:
         ensure   => present,
-        provider => 'chocolatey',
+        provider => $certmanager::wacs_package_provider,
       }
     }
   } else {
@@ -40,7 +40,7 @@ class certmanager::install {
 
     if $certmanager::dns_plugin_package_format {
       unique($plugins).each |$plugin| {
-        package { regsubst($certmanager::dns_plugin_package_format, '%\{plugin\}', $plugin):
+        package { regsubst($certmanager::dns_plugin_package_format, '<plugin>', $plugin):
           ensure => present,
         }
       }

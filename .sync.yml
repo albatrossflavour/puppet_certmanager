@@ -29,13 +29,34 @@
       Max: 250
     Metrics/BlockLength:
       Max: 80
-    # Keyword arguments, which the cop counts the same as positional ones.
+    # Keyword arguments do not have the positional-order problem this cop
+    # exists to prevent, and the store's deploy methods are all keywords.
     Metrics/ParameterLists:
-      Max: 5
-      MaxOptionalParameters: 8
+      CountKeywordArgs: false
     # puppet_x is loaded by pluginsync in an order nothing controls, so a
     # file cannot assume its parent module already exists. Nested definition
     # creates it; compact definition raises NameError if it does not.
     Style/ClassAndModuleChildren:
+      EnforcedStyle: compact
       Exclude:
         - 'lib/puppet_x/**/*.rb'
+    RSpec/ExampleLength:
+      Exclude:
+        - 'spec/unit/puppet/provider/**/*_spec.rb'
+        - 'spec/unit/puppet/transport/**/*_spec.rb'
+        - 'spec/unit/puppet_x/**/*_spec.rb'
+    RSpec/MultipleExpectations:
+      Exclude:
+        - 'spec/unit/puppet/provider/**/*_spec.rb'
+        - 'spec/unit/puppet/transport/**/*_spec.rb'
+        - 'spec/unit/puppet_x/**/*_spec.rb'
+        - 'spec/unit/facter/**/*_spec.rb'
+    RSpec/NamedSubject:
+      Exclude:
+        - 'spec/classes/**/*.rb'
+        - 'spec/defines/**/*.rb'
+        - 'spec/functions/**/*.rb'
+    RSpec/MultipleMemoizedHelpers:
+      Max: 10
+    RSpec/NestedGroups:
+      Max: 5

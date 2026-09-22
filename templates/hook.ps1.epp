@@ -7,7 +7,19 @@
 # Deploy hook for <%= $certificate %>, consumer <%= $consumer %>.
 # Managed by Puppet (certmanager) -- local edits will be overwritten.
 #
-# See $env:CERTMANAGER_* for the certificate's paths in the store.
+# Run by certmanager after the certificate changes, including renewals that
+# happen on the ACME client's own timer between Puppet runs. The store
+# exports the certificate's paths, so this script never hardcodes them.
+#
+#   $env:CERTMANAGER_NAME       the certificate name
+#   $env:CERTMANAGER_REASON     issued | renewed | deployed
+#   $env:CERTMANAGER_DIR        the certificate's directory in the store
+#   $env:CERTMANAGER_CERT       leaf certificate
+#   $env:CERTMANAGER_CHAIN      intermediates
+#   $env:CERTMANAGER_FULLCHAIN  leaf plus intermediates
+#   $env:CERTMANAGER_PRIVKEY    private key
+#   $env:CERTMANAGER_COMBINED   key plus full chain
+#   $env:CERTMANAGER_PKCS12     PKCS#12 bundle, if one was generated
 
 $ErrorActionPreference = 'Stop'
 <% if $only_if { -%>
