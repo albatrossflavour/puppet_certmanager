@@ -6,7 +6,7 @@ Be decent. Assume the other person is competent and acting in good faith, becaus
 
 ## What that means in practice
 
-Critique the code, not the person who wrote it. "This reissues on every run because the SAN list omits the common name" is useful. "This is amateur hour" is not, and it is also wrong, because that bug survived 1615 passing tests.
+Critique the code, not the person who wrote it. "This reissues on every run because the SAN list omits the common name" is useful. "This is amateur hour" is not, and it is also wrong, because that bug survived a full green test suite.
 
 Say what you actually tested. Confident claims that turn out to be untested waste more of everyone's time than an honest "I think, but I have not checked".
 

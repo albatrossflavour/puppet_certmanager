@@ -64,13 +64,14 @@ jobs:
         env:
           PUPPET_GEM_VERSION: "~> ${{ matrix.puppet }}.0"
 
-      # Without this every class and define spec dies on Stdlib::Absolutepath,
-      # which reads as a broken checkout rather than a missing step.
-      - name: Install fixtures
-        run: bundle exec rake spec_prep
-
+      # `rake spec` rather than a bare `rspec`. bundler-cache installs gems
+      # into vendor/bundle inside the repository, spec_prep symlinks the
+      # module root into spec/fixtures/modules/certmanager, and rspec's
+      # default pattern then collects every gem's own specs through that
+      # symlink. The rake task carries the correct pattern and runs
+      # spec_prep itself.
       - name: Unit specs
-        run: bundle exec rspec
+        run: bundle exec rake spec
         env:
           PUPPET_GEM_VERSION: "~> ${{ matrix.puppet }}.0"
 
@@ -86,16 +87,13 @@ jobs:
           ruby-version: '3.2'
           bundler-cache: true
 
-      - name: Install fixtures
-        run: bundle exec rake spec_prep
-
       # The floor is deliberately below the current figure. rspec-puppet loads
       # module code through the fixtures symlink, so functions, types and
       # providers are counted under a second path and read as untouched. The
       # gate exists to catch a real collapse, not to police a percentage that
       # the measurement cannot report accurately.
       - name: Unit specs with coverage
-        run: bundle exec rspec
+        run: bundle exec rake spec
         env:
           COVERAGE: 'yes'
           COVERAGE_MINIMUM: '70'

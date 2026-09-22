@@ -60,3 +60,9 @@
       Max: 10
     RSpec/NestedGroups:
       Max: 5
+.puppet-lint.rc:
+  disable_checks:
+    # PDK's vendored puppet-lint plugins and the Gemfile's newer
+    # voxpupuli-puppet-lint-plugins want opposite indentation on the same
+    # multi-line hash, so the check cannot be satisfied either way.
+    - strict_indent

@@ -6,4 +6,11 @@
 --no-autoloader_layout-check
 --no-documentation-check
 --no-single_quote_string_with_variables-check
+# strict_indent is off because the two implementations in play disagree with
+# each other. `pdk validate` uses PDK's vendored puppet-lint plugins; CI
+# resolves this module's Gemfile and gets a newer voxpupuli-puppet-lint-plugins.
+# On the same multi-line hash inside a function call, one wants 8 spaces and
+# the other wants 6, so no indentation passes both and the check cannot be
+# satisfied rather than merely being inconvenient.
+--no-strict_indent-check
 --ignore-paths=.vendor/**/*.pp,.bundle/**/*.pp,pkg/**/*.pp,spec/**/*.pp,tests/**/*.pp,types/**/*.pp,vendor/**/*.pp

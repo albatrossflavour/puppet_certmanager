@@ -15,6 +15,18 @@ pdk bundle exec rspec
 
 `spec_prep` matters. Without it every class and define spec dies on `Stdlib::Absolutepath`, which reads as a broken checkout rather than a missing step.
 
+## Two traps that cost an afternoon each
+
+**`pdk validate` and CI do not run the same puppet-lint.** `pdk validate` uses PDK's vendored plugins. CI resolves this module's `Gemfile`, which picks a newer `voxpupuli-puppet-lint-plugins`. They disagree, and not subtly: on the same multi-line hash inside a function call one wants 8 spaces of indent and the other wants 6. `strict_indent` is disabled in `.puppet-lint.rc` and the `Rakefile` for exactly that reason, because no indentation satisfies both. A green `pdk validate` is not proof CI will be green, so read the CI output rather than assuming.
+
+**Run the specs through rake, not a bare `rspec`.** `rake spec_prep` symlinks the module root to `spec/fixtures/modules/certmanager`, and rspec's default pattern walks that symlink. Two things follow, and neither announces itself.
+
+Locally it collects this module's own specs twice and reports roughly double the real number. The suite is 855 examples; a bare `rspec` claims 1709 and every one of them passes, so nothing looks wrong.
+
+On CI, where `bundler-cache` installs gems in-tree, it also walks `vendor/bundle` and collects every gem's own specs, and the run dies somewhere inside `awesome_print`'s test suite rather than yours.
+
+`bundle exec rake spec` carries the right pattern and runs `spec_prep` itself.
+
 ## The gates
 
 CI runs all of these on every pull request, so you can run the relevant one before pushing rather than after.
@@ -22,7 +34,7 @@ CI runs all of these on every pull request, so you can run the relevant one befo
 | What | Command | When it matters |
 | --- | --- | --- |
 | Everything | `pdk validate` | Any change. Covers metadata, Puppet syntax, puppet-lint and RuboCop |
-| Unit specs | `pdk bundle exec rspec` | Any change |
+| Unit specs | `pdk bundle exec rake spec` | Any change. Not a bare `rspec`, see above |
 | Line coverage | `COVERAGE=yes pdk bundle exec rspec` | Any change under `lib/` |
 | REFERENCE.md | `pdk bundle exec puppet strings generate --format markdown --out REFERENCE.md` | Any parameter or docstring change |
 | Markdown | `markdownlint-cli2 "**/*.md"` | Any prose change |
@@ -35,7 +47,7 @@ CI runs all of these on every pull request, so you can run the relevant one befo
 
 **Sign spec certificates with the test CA unless you mean self-signed.** A self-signed certificate recorded against a real CA backend is correctly reported as a leftover bootstrap placeholder. A spec that gets this wrong tests the fixture rather than the code.
 
-**Catalogue tests prove nothing about providers.** The first version of this module had 1615 passing examples and four real bugs, including one that reissued the certificate on every Puppet run. All four were found within ten minutes of applying it against a real certbot and a real CA. If you change a provider or an issuer backend, exercise it against something that actually issues.
+**Catalogue tests prove nothing about providers.** The first version of this module had a full green suite and four real bugs, including one that reissued the certificate on every Puppet run. All four were found within ten minutes of applying it against a real certbot and a real CA. If you change a provider or an issuer backend, exercise it against something that actually issues.
 
 **Adding a CA should touch two files.** One new class under `lib/puppet_x/certmanager/issuer/`, and one entry in `Issuer::BACKENDS`. If it needs more than that, the abstraction has leaked, and that is the bug to fix first.
 
