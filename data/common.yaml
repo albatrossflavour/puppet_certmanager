@@ -20,3 +20,7 @@ certmanager::refresh_minute: 17
 # hundred CA roots and buries the certificates that matter, so opting in is
 # a decision the site makes deliberately.
 certmanager::scan_directories: []
+
+# pdctng's service, notified when the collector changes. Set to ~ on a site
+# where something else owns restarting the daemon.
+certmanager::pdctng::service: 'pdctng'

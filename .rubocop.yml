@@ -114,6 +114,7 @@ RSpec/ExampleLength:
   # certmanager local: these specs drive a real certificate through a real
   # store on disk, so an example is a short scenario rather than one call.
   - spec/unit/puppet_x/**/*_spec.rb
+  - spec/unit/files/**/*_spec.rb
 RSpec/MultipleExpectations:
   Description: The resource-API provider specs PDK generates use multiple expectations
     per example to cover resource attribute checks. Scoped to PDK-generated provider
@@ -125,6 +126,8 @@ RSpec/MultipleExpectations:
   # scenario for no extra cover.
   - spec/unit/puppet_x/**/*_spec.rb
   - spec/unit/facter/**/*_spec.rb
+  - spec/unit/files/**/*_spec.rb
+  - spec/unit/files/**/*_spec.rb
   - spec/unit/puppet/provider/**/*_spec.rb
   - spec/unit/puppet/transport/**/*_spec.rb
 RSpec/VerifiedDoubleReference:

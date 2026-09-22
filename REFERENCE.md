@@ -9,6 +9,7 @@
 #### Public Classes
 
 * [`certmanager`](#certmanager): Declarative certificate lifecycle management.
+* [`certmanager::pdctng`](#certmanager--pdctng): Exposes certificate expiry across the estate through pdctng
 
 #### Private Classes
 
@@ -379,6 +380,155 @@ Days before expiry at which a certificate is listed in
 `expiring_critical`.
 
 Default value: `7`
+
+### <a name="certmanager--pdctng"></a>`certmanager::pdctng`
+
+Installs a collector plugin into pdctng's `collectors.d`, which reads the
+`certmanager` fact out of PuppetDB and publishes it on pdctng's metrics
+endpoint.
+
+Classify this on the node running the pdctng daemon, which is the PE
+primary, not on the nodes holding certificates. The fact travels to
+PuppetDB on its own; this class is only about reading it back out.
+
+Two things have to be true before it does anything. pdctng must have
+`enable_collector_plugins` set, because third-party Ruby running inside
+the daemon is an operator's decision rather than something that arrives
+with a module upgrade. And this class does not set it for you, for the
+same reason.
+
+### What it publishes, and why so little of it
+
+pdctng caps a plugin at 1000 series and drops the rest, so the shape here
+is decided by that rather than by what would be nice to have. A series per
+node is ten thousand on a real estate; a series per certificate is worse,
+because a node scanning `/etc/pki` can find fifty.
+
+So the estate is summarised in a fixed handful of series that do not grow
+with it, and per-node detail is emitted only for nodes that need looking
+at. That set is small by definition, and if it is not, the truncation is
+the finding.
+
+```text
+certmanager_nodes_reporting_total
+certmanager_certificates_total{managed}
+certmanager_nodes_total{state}
+certmanager_node_soonest_expiry_days{node,environment}   only inside the threshold
+```
+
+#### Examples
+
+##### On the PE primary
+
+```puppet
+class { 'pdctng':
+  enable_collector_plugins => true,
+}
+include certmanager::pdctng
+```
+
+##### Looking further ahead than the default
+
+```puppet
+class { 'certmanager::pdctng':
+  detail_within_days => 60,
+}
+```
+
+#### Parameters
+
+The following parameters are available in the `certmanager::pdctng` class:
+
+* [`ensure`](#-certmanager--pdctng--ensure)
+* [`puppetdb_url`](#-certmanager--pdctng--puppetdb_url)
+* [`detail_within_days`](#-certmanager--pdctng--detail_within_days)
+* [`collector_dir`](#-certmanager--pdctng--collector_dir)
+* [`config_file`](#-certmanager--pdctng--config_file)
+* [`ssl_cert`](#-certmanager--pdctng--ssl_cert)
+* [`ssl_key`](#-certmanager--pdctng--ssl_key)
+* [`ssl_ca`](#-certmanager--pdctng--ssl_ca)
+* [`service`](#-certmanager--pdctng--service)
+
+##### <a name="-certmanager--pdctng--ensure"></a>`ensure`
+
+Data type: `Enum['present', 'absent']`
+
+Whether the collector is installed.
+
+Default value: `'present'`
+
+##### <a name="-certmanager--pdctng--puppetdb_url"></a>`puppetdb_url`
+
+Data type: `Stdlib::HTTPUrl`
+
+PuppetDB, as the pdctng node reaches it. The default is the local
+instance over the standard port, which is right on a PE primary.
+
+Default value: `"https://${trusted['certname']}:8081"`
+
+##### <a name="-certmanager--pdctng--detail_within_days"></a>`detail_within_days`
+
+Data type: `Integer[1, 365]`
+
+How close to expiry a node has to be before it gets its own series.
+Nodes with an expired certificate, a bootstrap placeholder still in
+place, or a stale fact cache are always included regardless.
+
+Default value: `30`
+
+##### <a name="-certmanager--pdctng--collector_dir"></a>`collector_dir`
+
+Data type: `Stdlib::Absolutepath`
+
+pdctng's plugin directory, matching `pdctng::plugin_dir` if the site has
+moved it.
+
+Default value: `'/etc/puppetlabs/pdctng/collectors.d'`
+
+##### <a name="-certmanager--pdctng--config_file"></a>`config_file`
+
+Data type: `Stdlib::Absolutepath`
+
+Where the collector reads its settings. The collector treats the file's
+absence as "switched off", so a site can disable it without a Puppet run.
+
+Default value: `'/etc/puppetlabs/pdctng/certmanager.json'`
+
+##### <a name="-certmanager--pdctng--ssl_cert"></a>`ssl_cert`
+
+Data type: `Stdlib::Absolutepath`
+
+Client certificate for PuppetDB. Defaults to the node's own agent
+certificate, which is what PE already trusts.
+
+Default value: `"/etc/puppetlabs/puppet/ssl/certs/${trusted['certname']}.pem"`
+
+##### <a name="-certmanager--pdctng--ssl_key"></a>`ssl_key`
+
+Data type: `Stdlib::Absolutepath`
+
+Private key for that certificate.
+
+Default value: `"/etc/puppetlabs/puppet/ssl/private_keys/${trusted['certname']}.pem"`
+
+##### <a name="-certmanager--pdctng--ssl_ca"></a>`ssl_ca`
+
+Data type: `Stdlib::Absolutepath`
+
+CA bundle used to verify PuppetDB.
+
+Default value: `'/etc/puppetlabs/puppet/ssl/certs/ca.pem'`
+
+##### <a name="-certmanager--pdctng--service"></a>`service`
+
+Data type: `Optional[String[1]]`
+
+pdctng's service, notified when the collector or its settings change.
+The daemon scans the plugin directory at boot, so a new collector does
+nothing at all until it restarts. Set `certmanager::pdctng::service: ~`
+in Hiera where something else owns restarting it.
+
+Default value: `undef`
 
 ## Defined types
 

@@ -18,6 +18,10 @@ if ENV['COVERAGE'] == 'yes'
 
   SimpleCov.start do
     track_files 'lib/**/*.rb'
+    # The pdctng collector ships from files/ because pdctng copies it into
+    # its own plugin directory rather than loading it from the modulepath.
+    # It is still this module's Ruby and still has to be tested.
+    track_files 'files/**/*.rb'
     add_filter '/spec/'
     add_filter '/vendor/'
 
@@ -36,6 +40,7 @@ if ENV['COVERAGE'] == 'yes'
     add_group 'Types and providers', 'lib/puppet'
     add_group 'Libraries', 'lib/puppet_x'
     add_group 'Facts', 'lib/facter'
+    add_group 'Integrations', 'files'
 
     # Measured over spec/unit only, and that is load-bearing rather than a
     # convenience. spec/fixtures/modules/certmanager symlinks to the module

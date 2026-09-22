@@ -268,6 +268,35 @@ puppet query 'inventory[certname] { facts.certmanager.expiring_soon ~ ".+" }'
 puppet query 'inventory[certname] { facts.certmanager.placeholders ~ ".+" }'
 ```
 
+## Estate reporting through pdctng
+
+If you run [pdctng](https://github.com/albatrossflavour/pdctng), certificate expiry across the fleet can go on the same boards as everything else. Classify this on the node running the pdctng daemon, not on the nodes holding certificates: the fact travels to PuppetDB by itself, and this only reads it back out.
+
+```puppet
+class { 'pdctng':
+  enable_collector_plugins => true,
+}
+
+include certmanager::pdctng
+```
+
+The plugin extension point is off by default in pdctng and this class does not turn it on for you, because third-party Ruby running inside the daemon is a decision an operator takes rather than one that arrives with a module upgrade.
+
+What lands on the metrics endpoint:
+
+```text
+certmanager_nodes_reporting_total
+certmanager_certificates_total{managed}
+certmanager_nodes_total{state}                          expired, critical, soon, placeholder, stale, ok
+certmanager_node_soonest_expiry_days{node,environment}
+```
+
+The shape of that is decided by pdctng's cap of 1000 series per plugin, and the cap is a good constraint rather than an annoyance. A series per node is ten thousand on a real estate and gets truncated to a tenth of an answer; a series per certificate is worse, because a node scanning `/etc/pki` can find fifty. So the estate is summarised in a handful of series that do not grow with it, and only nodes that need looking at get their own.
+
+A node earns a series by being inside `detail_within_days` of expiry, or by having an expired certificate, a bootstrap placeholder still in place, or a fact cache that has gone stale. That set is small by definition, and if it is not, the truncation is the finding. Samples are emitted soonest-first so that truncation keeps the ones that matter.
+
+`certmanager_nodes_total` counts each node once, under the worst state any of its certificates is in. Counting a node under two states makes them sum to more than the fleet and no panel recovers from that.
+
 ## Tasks
 
 ```sh

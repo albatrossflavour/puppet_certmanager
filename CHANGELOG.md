@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- `certmanager::pdctng`, which installs a collector plugin into pdctng so certificate expiry across the estate lands on the same boards as everything else. Shaped around pdctng's cap of 1000 series per plugin: fixed summary families that do not grow with the fleet, and per-node detail only for nodes that need looking at.
 - Apache-2.0 `LICENSE` text, which `metadata.json` had been declaring without shipping.
 - `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`.
 - A CI pipeline: validation, unit specs, a line-coverage floor, a check that `REFERENCE.md` is current, and markdownlint.

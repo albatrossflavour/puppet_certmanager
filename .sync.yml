@@ -45,12 +45,14 @@
         - 'spec/unit/puppet/provider/**/*_spec.rb'
         - 'spec/unit/puppet/transport/**/*_spec.rb'
         - 'spec/unit/puppet_x/**/*_spec.rb'
+        - 'spec/unit/files/**/*_spec.rb'
     RSpec/MultipleExpectations:
       Exclude:
         - 'spec/unit/puppet/provider/**/*_spec.rb'
         - 'spec/unit/puppet/transport/**/*_spec.rb'
         - 'spec/unit/puppet_x/**/*_spec.rb'
         - 'spec/unit/facter/**/*_spec.rb'
+        - 'spec/unit/files/**/*_spec.rb'
     RSpec/NamedSubject:
       Exclude:
         - 'spec/classes/**/*.rb'
